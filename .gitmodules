@@ -1,0 +1,3 @@
+[submodule "external/giga"]
+	path = external/giga
+	url = https://github.com/cripplet/giga.git
