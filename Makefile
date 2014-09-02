@@ -8,18 +8,26 @@ INCLUDE_LIBS=-Iexternal/giga/external/catch/include/ -Iexternal/exceptionpp/incl
 
 LIBS=-pthread
 
-SOURCES=src/*cc libs/*/*cc
+S_SOURCES+=src/*cc libs/*/*cc
+S_OBJECTS=$(S_SOURCES:.cc=.o)
 
-OBJECTS=$(SOURCES:.cc=.o)
+T_SOURCES+=tests/*cc libs/*/*cc
+T_OBJECTS=$(T_SOURCES:.cc=.o)
 
-EXECUTABLE=tutorial.app
+S_EXECUTABLE=entangle.app
+T_EXECUTABLE=tests.app
 
-.PHONY: all clean
+.PHONY: all clean test
 
-all: $(SOURCES) $(EXECUTABLE)
+all: $(S_SOURCES) $(S_EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS)
-	@$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(OBJECTS) -o $@ $(LIBS)
+$(S_EXECUTABLE): $(S_OBJECTS)
+	$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(S_OBJECTS) -o $@ $(LIBS)
+
+$(T_EXECUTABLE): $(T_OBJECTS)
+	$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(T_OBJECTS) -o $@ $(LIBS)
+
+test: clean $(S_EXECUTABLE) $(T_EXECUTABLE)
 
 clean:
-	@rm -f $(EXECUTABLE) *.o *.log core
+	@rm -f $(S_EXECUTABLE) $(T_EXECUTABLE) *.o *.log core
