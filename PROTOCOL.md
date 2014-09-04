@@ -53,7 +53,7 @@ Erase
 Error Codes
 ----
 
-| Code | Designation |   |
-| ---- | ----------- | - |
+| Code | Designation | description |
+| ---- | ----------- | ----------- |
 | 0001 | ACC_DENIED  | access denied |
 | 0002 | MAX_CONN    | max connections |
