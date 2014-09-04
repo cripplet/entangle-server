@@ -340,8 +340,8 @@ Error Codes
 | Code | Designation | description |
 | ---- | ----------- | ----------- |
 | 0 | `NO_ERR` | no error |
-| 401 | `INVALID` | invalid response received |
-| 402 | `DENIED` | access denied |
-| 403 | `NO_CLIENT` | client not found |
-| 405 | `UNSYNC` | client is out of sync with server -- server will follow up with a `SYNC` packet |
-| 500 | `MAX_CONN` | max connections |
+| 400 | `INVALID` | invalid response received |
+| 401 | `DENIED` | access denied |
+| 404 | `NO_CLIENT` | client not found |
+| 409 | `UNSYNC` | client is out of sync with server -- server will follow up with a `SYNC` packet |
+| 503 | `MAX_CONN` | max connections |
