@@ -6,18 +6,14 @@ Format
 
 A message packet to / from `entangle-server` is expected to have the following format (where each field is delimited by `:`):
 
-`L:ACK:MSG_ID:CLIENT_ID:CMD:ERR:AUX`
-
-where *each field has arbitrary length*.
-
-### Example
-
 ```
-# client-side connection request
+L:ACK:MSG_ID:CLIENT_ID:CMD:ERR:AUX
+
+# example client-side conection request
 19::182::CONN::foobar123
 ```
 
-Where:
+Note that *each field has arbitrary length*.
 
 * `L` -- The total length of the packet, starting from the `ACK` field and ending at the last character of `AUX`. This does **not** include the `:` delimiter between `L` 
 	and `ACK`.
