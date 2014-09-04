@@ -9,6 +9,8 @@
 #include "libs/giga/file.h"
 #include "libs/giga/client.h"
 
+#include "src/entangle_msg.h"
+
 int main() {
 	auto s = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(8000));
 	auto c = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(8088));
@@ -25,4 +27,6 @@ int main() {
 
 	ts.join();
 	tc.join();
+
+	auto m = entangle::EntangleMessage("");
 }

@@ -11,7 +11,7 @@ LIBS=-pthread
 S_SOURCES+=src/*cc libs/*/*cc
 S_OBJECTS=$(S_SOURCES:.cc=.o)
 
-T_SOURCES+=tests/*cc libs/*/*cc
+T_SOURCES+=src/entangle_msg.cc tests/*cc libs/*/*cc
 T_OBJECTS=$(T_SOURCES:.cc=.o)
 
 S_EXECUTABLE=entangle.app
