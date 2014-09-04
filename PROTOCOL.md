@@ -4,7 +4,7 @@ entangle-server protocol
 Format
 ----
 
-A message packet to / from `entangle-server` is expected to have the following format (where each field is delimited by `:`):
+A message packet to / from `entangle-server` is expected to have the following format:
 
 ```
 L:ACK:MSG_ID:CLIENT_ID:CMD:ERR:AUX
