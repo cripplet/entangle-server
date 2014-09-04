@@ -10,7 +10,7 @@ A message packet to / from `entangle-server` is expected to have the following f
 L:ACK:MSG_ID:CLIENT_ID:CMD:ERR:AUX
 
 # example client-side conection request
-19::182::CONN::foobar123
+21::182::CONN::foobar123
 ```
 
 Note that *each field has arbitrary length*.
