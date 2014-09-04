@@ -6,7 +6,9 @@ Format
 
 A message packet to / from `entangle-server` is expected to have the following format (where each field is delimited by `:`):
 
-| `L` | `ACK` | `MSG_ID` | `CLIENT_ID` | `CMD` | `ERR` | `AUX` |
+`L:ACK:MSG_ID:CLIENT_ID:CMD:ERR:AUX`
+
+where *each field has arbitrary length*.
 
 ### Example
 
@@ -55,5 +57,5 @@ Error Codes
 
 | Code | Designation | description |
 | ---- | ----------- | ----------- |
-| 0001 | ACC_DENIED  | access denied |
-| 0002 | MAX_CONN    | max connections |
+| 1 | `ACC_DENIED` | access denied |
+| 2 | `MAX_CONN` | max connections |
