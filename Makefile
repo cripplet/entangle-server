@@ -4,7 +4,7 @@ CFLAGS=-Wall -Werror -O3 -std=c++11 -g -Wl,--no-as-needed -ldl -rdynamic -fstack
 INCLUDE=-Iinclude/
 
 # include statements necessary to link all the individual libraries
-INCLUDE_LIBS=-Iexternal/giga/external/catch/include/ -Iexternal/exceptionpp/include/ -Iexternal/giga/include/libs/stacktrace/ -Iexternal/giga/external/cachepp/include/ -Iexternal/giga/include/
+INCLUDE_LIBS=-Iexternal/giga/external/catch/include/ -Iexternal/exceptionpp/include/ -Iexternal/msgpp/include/ -Iexternal/giga/include/libs/stacktrace/ -Iexternal/giga/external/cachepp/include/ -Iexternal/giga/include/
 
 LIBS=-pthread
 
@@ -22,12 +22,13 @@ T_EXECUTABLE=tests.app
 all: $(S_SOURCES) $(S_EXECUTABLE)
 
 $(S_EXECUTABLE): $(S_OBJECTS)
-	$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(S_OBJECTS) -o $@ $(LIBS)
+	@$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(S_OBJECTS) -o $@ $(LIBS)
 
 $(T_EXECUTABLE): $(T_OBJECTS)
-	$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(T_OBJECTS) -o $@ $(LIBS)
+	@$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(T_OBJECTS) -o $@ $(LIBS)
 
 test: clean $(S_EXECUTABLE) $(T_EXECUTABLE)
+	@ulimit -c unlimited && time ./$(T_EXECUTABLE) | tee results.log
 
 clean:
 	@rm -f $(S_EXECUTABLE) $(T_EXECUTABLE) *.o *.log core
