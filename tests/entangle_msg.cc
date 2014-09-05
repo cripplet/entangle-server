@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "libs/catch/catch.hpp"
 #include "libs/exceptionpp/exception.h"
 
@@ -51,9 +49,19 @@ TEST_CASE("entangle|msg_types-drop") {
 
 TEST_CASE("entangle|msg_types-resize") {
 	auto req = entangle::EntangleMessageResizeRequest(182, "aEiOOf", "pw", 100);
-	std::cout << req.to_string() << std::endl;
 	REQUIRE(req.to_string().compare("0:182:aEiOOf:pw:RESIZE:0:100") == 0);
 
 	auto res = entangle::EntangleMessageResizeResponse(182, "aEiOOf");
 	REQUIRE(res.to_string().compare("1:182:aEiOOf::RESIZE:0:") == 0);
+}
+
+TEST_CASE("entangle|msg_types-sync") {
+	auto req = entangle::EntangleMessageSyncRequest(182, "aEiOOf", "pw", 0);
+	REQUIRE(req.to_string().compare("0:182:aEiOOf:pw:SYNC:0:0") == 0);
+
+	auto res = entangle::EntangleMessageSyncResponse(182, "aEiOOf", 1, 2, "foo");
+	REQUIRE(res.to_string().compare("1:182:aEiOOf::SYNC:0:1:2:foo") == 0);
+
+	auto res_ack = entangle::EntangleMessageSyncResponseAck(182, "aEiOOf", "pw");
+	REQUIRE(req.to_string().compare("1:182:aEiOOf:pw:SYNC:0:") == 0);
 }
