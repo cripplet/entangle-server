@@ -38,3 +38,11 @@ TEST_CASE("entangle|msg_types-conn") {
 	auto res = entangle::EntangleMessageConnectResponse(182, "aEiOOf");
 	REQUIRE(res.to_string().compare("1:182:aEiOOf::CONN:0:") == 0);
 }
+
+TEST_CASE("entangle|msg_types-drop") {
+	auto req = entangle::EntangleMessageDropRequest(182, "aEiOOf", "pw");
+	REQUIRE(req.to_string().compare("0:182:aEiOOf:pw:DROP:0:") == 0);
+
+	auto res = entangle::EntangleMessageDropResponse(182, "aEiOOf");
+	REQUIRE(res.to_string().compare("1:182:aEiOOf::DROP:0:") == 0);
+}
