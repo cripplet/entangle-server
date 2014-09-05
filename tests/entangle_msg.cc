@@ -2,6 +2,7 @@
 #include "libs/exceptionpp/exception.h"
 
 #include "src/entangle_msg.h"
+#include "src/msg_types.h"
 
 TEST_CASE("entangle|entangle_msg") {
 	auto m = entangle::EntangleMessage("0:182:CLIENT_ID:AUTH:CONN:0:foobar123");
@@ -28,4 +29,12 @@ TEST_CASE("entangle|entangle_msg") {
 	REQUIRE(m.get_tail().compare("baz") == 0);
 
 	REQUIRE_THROWS_AS(entangle::EntangleMessage("::::::", 1), exceptionpp::InvalidOperation);
+}
+
+TEST_CASE("entangle|msg_types-conn") {
+	auto req = entangle::EntangleMessageConnectRequest(182, "pw", "server-pw");
+	REQUIRE(req.to_string().compare("0:182::pw:CONN:0:server-pw") == 0);
+
+	auto res = entangle::EntangleMessageConnectResponse(182, "aEiOOf");
+	REQUIRE(res.to_string().compare("1:182:aEiOOf::CONN:0:") == 0);
 }

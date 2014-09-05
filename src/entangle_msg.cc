@@ -7,6 +7,16 @@
 
 #include "src/entangle_msg.h"
 
+const std::string entangle::EntangleMessage::cmd_connect = "CONN";
+const std::string entangle::EntangleMessage::cmd_drop = "DROP";
+const std::string entangle::EntangleMessage::cmd_resize = "RESIZE";
+const std::string entangle::EntangleMessage::cmd_sync = "SYNC";
+const std::string entangle::EntangleMessage::cmd_seek = "SEEK";
+const std::string entangle::EntangleMessage::cmd_overwrite = "OVER";
+const std::string entangle::EntangleMessage::cmd_insert = "INSERT";
+const std::string entangle::EntangleMessage::cmd_erase = "ERASE";
+const std::string entangle::EntangleMessage::cmd_backspace = "BACK";
+
 entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args) {
 	std::vector<std::string> v;
 
