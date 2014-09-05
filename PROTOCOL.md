@@ -186,7 +186,7 @@ Possible additional error codes:
 Seek
 ----
 
-Adjust the client file pointer position accordingly.
+Adjust the client file pointer position accordingly. If resulting client offset is beyond the current client buffer, the server will send a `SYNC` packet.
 
 ### Request
 
