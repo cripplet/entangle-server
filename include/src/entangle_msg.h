@@ -7,6 +7,9 @@
 namespace entangle {
 	class EntangleMessage {
 		public:
+			/**
+			 * of the form ACK:MSG_ID:CLIENT_ID:AUTH:CMD:ERR:AUX
+			 */
 			EntangleMessage(std::string string);
 			EntangleMessage(bool ack, size_t msg_id, std::string client_id, std::string auth, std::string cmd, size_t err, std::vector<std::string> args, std::string tail);
 
@@ -22,6 +25,7 @@ namespace entangle {
 			std::string to_string();
 
 		protected:
+			size_t length;
 			bool ack;
 			size_t msg_id;
 			std::string client_id;

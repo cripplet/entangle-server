@@ -28,5 +28,6 @@ int main() {
 	ts.join();
 	tc.join();
 
-	auto m = entangle::EntangleMessage("");
+	auto m = entangle::EntangleMessage(":182:::CONN::foobar123");
+	std::cout << m.to_string() << std::endl;
 }

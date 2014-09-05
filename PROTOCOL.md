@@ -7,17 +7,19 @@ Format
 A message packet to / from `entangle-server` is expected to have the following format:
 
 ```
-L:ACK:MSG_ID:CLIENT_ID:AUTH:CMD:ERR:AUX
+L:RESERVED:RESERVED:ACK:MSG_ID:CLIENT_ID:AUTH:CMD:ERR:AUX
 
 # example client-side conection request
-22::182:::CONN::foobar123
+24::::182:::CONN::foobar123
 
 # example server-side connection response
-20:1:182:ef893::CONN:0:
+22:::1:182:ef893::CONN:0:
 ```
 
 Note that *each field has arbitrary length*.
 
+* `RESERVED` -- Reserved fields for future protocol expansion; will probably be of the form `LEN_RESERVED:RESERVED` to allow for arbitrary arguments in the second 
+	`RESERVED` field. May be used for message encryption purposes. Currently, leave blank.
 * `L` -- The total length of the packet, starting from the `ACK` field and ending at the last character of `AUX`. This does **not** include the `:` delimiter between `L` 
 	and `ACK`.
 * `ACK` -- Set to `0` or leave empty on a request and set to `1` on a response.

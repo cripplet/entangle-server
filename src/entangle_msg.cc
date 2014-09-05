@@ -2,9 +2,33 @@
 #include <string>
 #include <vector>
 
+#include "libs/exceptionpp/exception.h"
+
 #include "src/entangle_msg.h"
 
 entangle::EntangleMessage::EntangleMessage(std::string string) {
+	std::vector<std::string> v;
+	size_t curr;
+	size_t next = -1;
+	size_t count = 0;
+	do {
+		curr = next + 1;
+		next = string.find_first_of(":", curr);
+		v.push_back(string.substr(curr, next - curr));
+		count++;
+	}
+	while (next != std::string::npos && count < 8);
+	if(v.size() < 7) {
+		throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+	}
+
+	this->ack = (v.at(0).compare("") == 0) ? 0 : (bool) stol(v.at(0));
+	this->msg_id = (v.at(0).compare("") == 0) ? 0 : (size_t) stol(v.at(1));
+	this->client_id = v.at(2);
+	this->auth = v.at(3);
+	this->cmd = v.at(4);
+	this->err = (v.at(5).compare("") == 0) ? 0 : (size_t) stol(v.at(5));
+	this->tail = v.at(6);
 }
 
 entangle::EntangleMessage::EntangleMessage(bool ack, size_t msg_id, std::string client_id, std::string auth, std::string cmd, size_t err, std::vector<std::string> args, std::string tail) {
