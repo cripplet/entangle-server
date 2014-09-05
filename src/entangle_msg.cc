@@ -21,7 +21,7 @@ entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args) {
 		count++;
 	}
 	while (next != std::string::npos);
-	if(v.size() < 7) {
+	if(v.size() < 7 + n_args) {
 		throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
 	}
 

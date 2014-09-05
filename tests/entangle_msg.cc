@@ -26,4 +26,6 @@ TEST_CASE("entangle|entangle_msg") {
 	REQUIRE(m.get_args().at(1).compare("foo") == 0);
 	REQUIRE(m.get_args().at(2).compare("bar") == 0);
 	REQUIRE(m.get_tail().compare("baz") == 0);
+
+	REQUIRE_THROWS_AS(entangle::EntangleMessage("::::::", 1), exceptionpp::InvalidOperation);
 }
