@@ -23,7 +23,7 @@ entangle::EntangleMessage::EntangleMessage(std::string string) {
 	}
 
 	this->ack = (v.at(0).compare("") == 0) ? 0 : (bool) stol(v.at(0));
-	this->msg_id = (v.at(0).compare("") == 0) ? 0 : (size_t) stol(v.at(1));
+	this->msg_id = (v.at(1).compare("") == 0) ? 0 : (size_t) stol(v.at(1));
 	this->client_id = v.at(2);
 	this->auth = v.at(3);
 	this->cmd = v.at(4);
