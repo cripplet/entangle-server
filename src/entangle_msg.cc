@@ -1,4 +1,5 @@
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -6,8 +7,10 @@
 
 #include "src/entangle_msg.h"
 
-entangle::EntangleMessage::EntangleMessage(std::string string) {
+entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args) {
 	std::vector<std::string> v;
+
+	// cf. http://bit.ly/1o7a4Rq
 	size_t curr;
 	size_t next = -1;
 	size_t count = 0;
@@ -17,18 +20,31 @@ entangle::EntangleMessage::EntangleMessage(std::string string) {
 		v.push_back(string.substr(curr, next - curr));
 		count++;
 	}
-	while (next != std::string::npos && count < 8);
+	while (next != std::string::npos);
 	if(v.size() < 7) {
 		throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
 	}
 
-	this->ack = (v.at(0).compare("") == 0) ? 0 : (bool) stol(v.at(0));
-	this->msg_id = (v.at(1).compare("") == 0) ? 0 : (size_t) stol(v.at(1));
+	try {
+		this->ack = (v.at(0).compare("") == 0) ? 0 : (bool) stol(v.at(0));
+		if((v.at(0).compare("") != 0) && stol(v.at(0)) > 1) {
+			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+		}
+		this->msg_id = (v.at(1).compare("") == 0) ? 0 : (size_t) stol(v.at(1));
+		this->err = (v.at(5).compare("") == 0) ? 0 : (size_t) stol(v.at(5));
+	} catch(const std::invalid_argument& e) {
+		throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+	}
 	this->client_id = v.at(2);
 	this->auth = v.at(3);
 	this->cmd = v.at(4);
-	this->err = (v.at(5).compare("") == 0) ? 0 : (size_t) stol(v.at(5));
-	this->tail = v.at(6);
+	this->args = std::vector<std::string> (v.begin() + 6, v.begin() + 6 + n_args);
+	for(size_t i = 6 + n_args; i < v.size(); ++i) {
+		this->tail.append(v.at(i));
+		if(i != v.size() - 1) {
+			this->tail.append(":");
+		}
+	}
 }
 
 entangle::EntangleMessage::EntangleMessage(bool ack, size_t msg_id, std::string client_id, std::string auth, std::string cmd, size_t err, std::vector<std::string> args, std::string tail) {

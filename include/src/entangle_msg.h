@@ -10,7 +10,7 @@ namespace entangle {
 			/**
 			 * of the form ACK:MSG_ID:CLIENT_ID:AUTH:CMD:ERR:AUX
 			 */
-			EntangleMessage(std::string string);
+			EntangleMessage(std::string string, size_t n_args = 0);
 			EntangleMessage(bool ack, size_t msg_id, std::string client_id, std::string auth, std::string cmd, size_t err, std::vector<std::string> args, std::string tail);
 
 			bool get_ack();
