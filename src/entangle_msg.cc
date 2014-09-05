@@ -81,7 +81,10 @@ std::string entangle::EntangleMessage::to_string() {
 	std::stringstream buf;
 	buf << this->get_ack() << ":" << this->get_msg_id() << ":" << this->get_client_id() << ":" << this->get_auth() << ":" << this->get_cmd() << ":" << this->get_err() << ":";
 	for(size_t i = 0; i < this->get_args().size(); ++i) {
-		buf << this->get_args().at(i) << ":";
+		buf << this->get_args().at(i);
+		if((i < this->get_args().size() - 1) || (this->tail.compare("") != 0)) {
+			buf << ":";
+		}
 	}
 	buf << this->get_tail();
 	return(buf.str());

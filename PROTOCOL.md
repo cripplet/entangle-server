@@ -108,7 +108,8 @@ Possible additional error codes:
 Resize
 ----
 
-Notify the server of the amount of data seen by the client.
+Notify the server of the amount of data seen by the client. The client must afterwards send a `SYNC` packet, with `AUX` set to `1`. The server will attempt to keep the 
+client buffer offset as-is until the buffer size is less than the client buffer offset.
 
 ### Request
 
