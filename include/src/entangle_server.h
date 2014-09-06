@@ -61,7 +61,6 @@ namespace entangle {
 
 		private:
 			FILE *file_lock;
-			std::mutex l;
 			std::shared_ptr<msgpp::MessageNode> node;
 			std::shared_ptr<giga::File> file;
 			std::shared_ptr<std::atomic<bool>> flag;
