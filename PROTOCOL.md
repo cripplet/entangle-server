@@ -247,7 +247,7 @@ Possible additional error codes:
 | ----- | ----- |
 | `CMD` | mirrored |
 | `ERR` | error code |
-| `AUX` | `MSG_ID` of last successful `SYNC` if error code is `UNSYNC`, otherwise blank |
+| `AUX` | `SYNC_MSG_ID:SYNCPOS_MSG_ID` of last successful `SYNC` and `SYNCPOS` if error code is `UNSYNC`, otherwise blank |
 
 Overwrite
 ----
@@ -277,7 +277,7 @@ Possible additional error codes:
 | ----- | ----- |
 | `CMD` | mirrored |
 | `ERR` | error code |
-| `AUX` | `MSG_ID` of last successful `SYNC` if error code is `UNSYNC`, otherwise blank |
+| `AUX` | `SYNC_MSG_ID:SYNCPOS_MSG_ID` of last successful `SYNC` and `SYNCPOS` if error code is `UNSYNC`, otherwise blank |
 
 Insert
 ----
@@ -307,7 +307,7 @@ Possible additional error codes:
 | ----- | ----- |
 | `CMD` | mirrored |
 | `ERR` | error code |
-| `AUX` | `MSG_ID` of last successful `SYNC` if error code is `UNSYNC`, otherwise blank |
+| `AUX` | `SYNC_MSG_ID:SYNCPOS_MSG_ID` of last successful `SYNC` and `SYNCPOS` if error code is `UNSYNC`, otherwise blank |
 
 Erase
 ----
@@ -337,7 +337,7 @@ Possible additional error codes:
 | ----- | ----- |
 | `CMD` | mirrored |
 | `ERR` | error code |
-| `AUX` | `MSG_ID` of last successful `SYNC` if error code is `UNSYNC`, otherwise blank |
+| `AUX` | `SYNC_MSG_ID:SYNCPOS_MSG_ID` of last successful `SYNC` and `SYNCPOS` if error code is `UNSYNC`, otherwise blank |
 
 Backspace
 ----
@@ -367,7 +367,7 @@ Possible additional error codes:
 | ----- | ----- |
 | `CMD` | mirrored |
 | `ERR` | error code |
-| `AUX` | `MSG_ID` of last successful `SYNC` if error code is `UNSYNC`, otherwise blank |
+| `AUX` | `SYNC_MSG_ID:SYNCPOS_MSG_ID` of last successful `SYNC` and `SYNCPOS` if error code is `UNSYNC`, otherwise blank |
 
 Error Codes
 ----
@@ -378,5 +378,5 @@ Error Codes
 | 400 | `INVALID` | invalid response received |
 | 401 | `DENIED` | access denied |
 | 404 | `NO_CLIENT` | client not found |
-| 409 | `UNSYNC` | client is out of sync with server -- server will follow up with a `SYNC` packet |
+| 409 | `UNSYNC` | client is out of sync with server -- server will follow up with a `SYNC` and `SYNCPOS` packet |
 | 503 | `MAX_CONN` | max connections |
