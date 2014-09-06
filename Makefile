@@ -28,6 +28,8 @@ $(T_EXECUTABLE): $(T_OBJECTS)
 	@$(CC) $(CFLAGS) -D _ENTANGLE_NO_MAIN $(INCLUDE_LIBS) $(INCLUDE) $(T_OBJECTS) -o $@ $(LIBS)
 
 prep:
+	@rm -rf tests/files/
+
 	@mkdir -p tests/files/
 
 test: clean $(S_EXECUTABLE) $(T_EXECUTABLE) prep
