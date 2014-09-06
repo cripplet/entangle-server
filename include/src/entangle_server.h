@@ -1,9 +1,11 @@
 #ifndef _ENTANGLE_SERVER_H
 #define _ENTANGLE_SERVER_H
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include "libs/giga/client.h"
 #include "libs/giga/file.h"
@@ -53,15 +55,21 @@ namespace entangle {
 		public:
 			EntangleServer(std::string filename, size_t max_conn, size_t port);
 
+			bool get_status();
+
 			void up();
-			void dn();
 
 		private:
+			FILE *file_lock;
 			std::mutex l;
 			std::shared_ptr<msgpp::MessageNode> node;
 			std::shared_ptr<giga::File> file;
+			std::shared_ptr<std::atomic<bool>> flag;
 			std::map<std::string, ClientInfo> lookaside;
 			size_t max_conn;
+			std::thread node_t;
+
+			void dn();
 	};
 }
 

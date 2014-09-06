@@ -1,3 +1,4 @@
+#include <sys/file.h>
 #include <memory>
 #include <thread>
 
@@ -32,20 +33,35 @@ void entangle::ClientInfo::set_last_msg(size_t last_msg) { this->last_msg = last
 void entangle::ClientInfo::set_is_valid(bool is_valid) { this->is_valid = is_valid; }
 
 entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port) {
-	if(0// yadda lock file exists
-	) {}
 	this->file = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5));
+	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
 }
 
+bool entangle::EntangleServer::get_status() { return(*(this->flag)); }
+
 void entangle::EntangleServer::up() {
-	auto t = std::thread(&msgpp::MessageNode::up, &*(this->node));
+	if(*(this->flag)) {
+		return;
+	}
+
+	std::string f = this->file->get_filename();
+	f.append(".lock");
+	this->file_lock = fopen(f.c_str(), "w+");
+	if(flock(fileno(this->file_lock), LOCK_NB | LOCK_EX) == -1) {
+		fclose(this->file_lock);
+		this->file_lock = NULL;
+		throw(exceptionpp::RuntimeError("entangle::EntangleServer::EntangleServer", "file is locked for editing"));
+	}
+
+	this->node_t = std::thread(&msgpp::MessageNode::up, &*(this->node));
+	while(!this->node->get_status());
+	*(this->flag) = 1;
 	while(this->node->get_status()) {
 		while(this->node->query()) {
 			std::cout << this->node->pull() << std::endl;
 		}
 	}
-	t.join();
 	// process remaining items in queue
 	while(this->node->query()) {
 		std::cout << this->node->pull() << std::endl;
@@ -53,4 +69,17 @@ void entangle::EntangleServer::up() {
 	this->dn();
 }
 
-void entangle::EntangleServer::dn() {}
+void entangle::EntangleServer::dn() {
+	if(!*(this->flag)) {
+		return;
+	}
+
+	this->node_t.join();
+	*(this->flag) = 0;
+
+	std::string f = this->file->get_filename();
+	f.append(".lock");
+	remove(f.c_str());
+	fclose(this->file_lock);
+	this->file_lock = NULL;
+}
