@@ -11,6 +11,7 @@ const std::string entangle::EntangleMessage::cmd_connect = "CONN";
 const std::string entangle::EntangleMessage::cmd_drop = "DROP";
 const std::string entangle::EntangleMessage::cmd_resize = "RESIZE";
 const std::string entangle::EntangleMessage::cmd_sync = "SYNC";
+const std::string entangle::EntangleMessage::cmd_syncpos = "SYNCPOS";
 const std::string entangle::EntangleMessage::cmd_seek = "SEEK";
 const std::string entangle::EntangleMessage::cmd_overwrite = "OVER";
 const std::string entangle::EntangleMessage::cmd_insert = "INSERT";

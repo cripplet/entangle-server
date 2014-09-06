@@ -61,11 +61,19 @@ TEST_CASE("entangle|msg_types-sync") {
 	auto req = entangle::EntangleMessageSyncRequest(182, "aEiOOf", "pw", 0);
 	REQUIRE(req.to_string().compare("0:182:aEiOOf:pw:SYNC:0:0") == 0);
 
-	auto res = entangle::EntangleMessageSyncResponse(182, "aEiOOf", 1, 2, "foo");
-	REQUIRE(res.to_string().compare("1:182:aEiOOf::SYNC:0:1:2:foo") == 0);
+	auto res = entangle::EntangleMessageSyncResponse(182, "aEiOOf", "diff");
+	REQUIRE(res.to_string().compare("1:182:aEiOOf::SYNC:0:diff") == 0);
 
 	auto res_ack = entangle::EntangleMessageSyncResponseAck(182, "aEiOOf", "pw");
 	REQUIRE(res_ack.to_string().compare("1:182:aEiOOf:pw:SYNC:0:") == 0);
+}
+
+TEST_CASE("entangle|msg_types-syncpos") {
+	auto res = entangle::EntangleMessageSyncPosResponse(182, "aEiOOf", "bhe87h", 0);
+	REQUIRE(res.to_string().compare("1:182:aEiOOf::SYNCPOS:0:bhe87h:0") == 0);
+
+	auto res_ack = entangle::EntangleMessageSyncPosResponseAck(182, "aEiOOf", "pw");
+	REQUIRE(res_ack.to_string().compare("1:182:aEiOOf:pw:SYNCPOS:0:") == 0);
 }
 
 TEST_CASE("entangle|msg_types-seek") {

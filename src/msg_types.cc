@@ -20,12 +20,16 @@ entangle::EntangleMessageResizeRequest::EntangleMessageResizeRequest(size_t msg_
 entangle::EntangleMessageResizeResponse::EntangleMessageResizeResponse(size_t msg_id, std::string client_id) : entangle::EntangleMessageResponse(msg_id, client_id, entangle::EntangleMessage::cmd_resize) {}
 
 entangle::EntangleMessageSyncRequest::EntangleMessageSyncRequest(size_t msg_id, std::string client_id, std::string auth, bool arg) : entangle::EntangleMessage(false, msg_id, client_id, auth, entangle::EntangleMessage::cmd_sync, entangle::EntangleMessage::error_no_err, std::vector<std::string> { std::to_string(arg) }) {}
-entangle::EntangleMessageSyncResponse::EntangleMessageSyncResponse(size_t msg_id, std::string client_id, size_t buff_offset, size_t client_offset, std::string diff) : entangle::EntangleMessageResponse(msg_id, client_id, entangle::EntangleMessage::cmd_sync) {
-	this->args.push_back(std::to_string(buff_offset));
-	this->args.push_back(std::to_string(client_offset));
+entangle::EntangleMessageSyncResponse::EntangleMessageSyncResponse(size_t msg_id, std::string client_id, std::string diff) : entangle::EntangleMessageResponse(msg_id, client_id, entangle::EntangleMessage::cmd_sync) {
 	this->tail = diff;
 }
 entangle::EntangleMessageSyncResponseAck::EntangleMessageSyncResponseAck(size_t msg_id, std::string client_id, std::string auth) : entangle::EntangleMessage(true, msg_id, client_id, auth, entangle::EntangleMessage::cmd_sync) {}
+
+entangle::EntangleMessageSyncPosResponse::EntangleMessageSyncPosResponse(size_t msg_id, std::string client_id, std::string client_pos_id, size_t client_pos_offset) : entangle::EntangleMessageResponse(msg_id, client_id, entangle::EntangleMessage::cmd_syncpos) {
+	this->args.push_back(client_pos_id);
+	this->args.push_back(std::to_string(client_pos_offset));
+}
+entangle::EntangleMessageSyncPosResponseAck::EntangleMessageSyncPosResponseAck(size_t msg_id, std::string client_id, std::string auth) : entangle::EntangleMessage(true, msg_id, client_id, auth, entangle::EntangleMessage::cmd_syncpos) {}
 
 entangle::EntangleMessageSeekRequest::EntangleMessageSeekRequest(size_t msg_id, std::string client_id, std::string auth, bool is_relative, bool is_forward, size_t offset) : entangle::EntangleMessage(false, msg_id, client_id, auth, entangle::EntangleMessage::cmd_seek) {
 	this->args.push_back(std::to_string(is_relative));

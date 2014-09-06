@@ -36,6 +36,7 @@ namespace entangle {
 			static const std::string cmd_drop;
 			static const std::string cmd_resize;
 			static const std::string cmd_sync;
+			static const std::string cmd_syncpos;
 			static const std::string cmd_seek;
 			static const std::string cmd_overwrite;
 			static const std::string cmd_insert;

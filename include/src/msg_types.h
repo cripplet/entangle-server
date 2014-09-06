@@ -54,11 +54,23 @@ namespace entangle {
 	};
 	class EntangleMessageSyncResponse : public EntangleMessageResponse {
 		public:
-			EntangleMessageSyncResponse(size_t msg_id, std::string client_id, size_t buff_offset, size_t client_offset, std::string diff);
+			EntangleMessageSyncResponse(size_t msg_id, std::string client_id, std::string diff);
 	};
 	class EntangleMessageSyncResponseAck : public EntangleMessage {
 		public:
 			EntangleMessageSyncResponseAck(size_t msg_id, std::string client_id, std::string auth);
+	};
+
+	/**
+	 * SYNCPOS
+	 */
+	class EntangleMessageSyncPosResponse : public EntangleMessageResponse {
+		public:
+			EntangleMessageSyncPosResponse(size_t msg_id, std::string client_id, std::string client_pos_id, size_t client_pos_offset);
+	};
+	class EntangleMessageSyncPosResponseAck : public EntangleMessage {
+		public:
+			EntangleMessageSyncPosResponseAck(size_t msg_id, std::string client_id, std::string auth);
 	};
 
 	/**
