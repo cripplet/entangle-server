@@ -51,7 +51,7 @@ namespace entangle {
 
 	class EntangleServer {
 		public:
-			EntangleServer(std::string filename, size_t max_conn);
+			EntangleServer(std::string filename, size_t max_conn, size_t port);
 
 			void up();
 			void dn();

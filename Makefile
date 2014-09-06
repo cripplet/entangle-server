@@ -17,7 +17,7 @@ T_OBJECTS=$(T_SOURCES:.cc=.o)
 S_EXECUTABLE=entangle.app
 T_EXECUTABLE=tests.app
 
-.PHONY: all clean test
+.PHONY: all clean test prep
 
 all: $(S_SOURCES) $(S_EXECUTABLE)
 
@@ -27,7 +27,10 @@ $(S_EXECUTABLE): $(S_OBJECTS)
 $(T_EXECUTABLE): $(T_OBJECTS)
 	@$(CC) $(CFLAGS) -D _ENTANGLE_NO_MAIN $(INCLUDE_LIBS) $(INCLUDE) $(T_OBJECTS) -o $@ $(LIBS)
 
-test: clean $(S_EXECUTABLE) $(T_EXECUTABLE)
+prep:
+	@mkdir -p tests/files/
+
+test: clean $(S_EXECUTABLE) $(T_EXECUTABLE) prep
 	@ulimit -c unlimited && time ./$(T_EXECUTABLE) | tee results.log
 
 clean:

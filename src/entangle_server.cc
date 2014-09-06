@@ -1,4 +1,7 @@
 #include <memory>
+#include <thread>
+
+#include <iostream>
 
 #include "libs/giga/client.h"
 #include "libs/giga/file.h"
@@ -27,20 +30,27 @@ void entangle::ClientInfo::set_sync_msg(size_t sync_msg) { this->sync_msg = sync
 void entangle::ClientInfo::set_syncpos_msg(size_t syncpos_msg) { this->syncpos_msg = syncpos_msg; }
 void entangle::ClientInfo::set_last_msg(size_t last_msg) { this->last_msg = last_msg; }
 void entangle::ClientInfo::set_is_valid(bool is_valid) { this->is_valid = is_valid; }
-/*
-	class EntangleServer {
-		public:
-			EntangleServer(std::string filename, size_t max_conn);
 
-			void up();
-			void dn();
-
-		private:
-			std::mutex l;
-			std::shared_ptr<msgpp::MessageNode> node;
-			std::shared_ptr<giga::File> file;
-			std::map<std::string, ClientInfo> lookaside;
-			size_t max_conn;
-	};
+entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port) {
+	if(0// yadda lock file exists
+	) {}
+	this->file = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
+	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5));
 }
-*/
+
+void entangle::EntangleServer::up() {
+	auto t = std::thread(&msgpp::MessageNode::up, &*(this->node));
+	while(this->node->get_status()) {
+		while(this->node->query()) {
+			std::cout << this->node->pull() << std::endl;
+		}
+	}
+	t.join();
+	// process remaining items in queue
+	while(this->node->query()) {
+		std::cout << this->node->pull() << std::endl;
+	}
+	this->dn();
+}
+
+void entangle::EntangleServer::dn() {}
