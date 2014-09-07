@@ -92,6 +92,7 @@ std::string entangle::EntangleMessage::get_tail() { return(this->tail); }
 bool entangle::EntangleMessage::get_is_invalid() { return(this->is_invalid); }
 
 void entangle::EntangleMessage::set_err(size_t err) { this->err = err; }
+void entangle::EntangleMessage::set_msg_id(size_t msg_id) { this->msg_id = msg_id; }
 
 std::string entangle::EntangleMessage::to_string() {
 	std::stringstream buf;

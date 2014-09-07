@@ -28,7 +28,8 @@ namespace entangle {
 			std::shared_ptr<giga::Client> get_client();
 			size_t get_sync_msg();
 			size_t get_syncpos_msg();
-			size_t get_last_msg();
+			size_t get_last_client_msg();
+			size_t get_last_server_msg();
 			bool get_is_valid();
 
 			void set_buf_begin(size_t buf_begin);
@@ -36,7 +37,8 @@ namespace entangle {
 			void set_buffer(std::string buffer);
 			void set_sync_msg(size_t sync_msg);
 			void set_syncpos_msg(size_t syncpos_msg);
-			void set_last_msg(size_t last_msg);
+			void set_last_client_msg(size_t last_msg);
+			void set_last_server_msg(size_t last_msg);
 			void set_is_valid(bool is_valid);
 
 			void drop();
@@ -51,7 +53,8 @@ namespace entangle {
 			std::shared_ptr<giga::Client> client;
 			size_t sync_msg;
 			size_t syncpos_msg;
-			size_t last_msg;
+			size_t last_client_msg;
+			size_t last_server_msg;
 			bool is_valid;
 	};
 

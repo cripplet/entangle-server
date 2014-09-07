@@ -20,7 +20,8 @@ size_t entangle::ClientInfo::get_client_pos() { return(this->get_client()->get_p
 std::shared_ptr<giga::Client> entangle::ClientInfo::get_client() { return(this->client); }
 size_t entangle::ClientInfo::get_sync_msg() { return(this->sync_msg); }
 size_t entangle::ClientInfo::get_syncpos_msg() { return(this->syncpos_msg); }
-size_t entangle::ClientInfo::get_last_msg() { return(this->last_msg); }
+size_t entangle::ClientInfo::get_last_client_msg() { return(this->last_client_msg); }
+size_t entangle::ClientInfo::get_last_server_msg() { return(this->last_server_msg); }
 bool entangle::ClientInfo::get_is_valid() { return(this->is_valid); }
 size_t entangle::ClientInfo::get_port() { return(this->port); }
 std::string entangle::ClientInfo::get_hostname() { return(this->hostname); }
@@ -30,7 +31,8 @@ void entangle::ClientInfo::set_buf_size(size_t buf_size) { this->buf_size = buf_
 void entangle::ClientInfo::set_buffer(std::string buffer) { this->buffer = buffer; }
 void entangle::ClientInfo::set_sync_msg(size_t sync_msg) { this->sync_msg = sync_msg; }
 void entangle::ClientInfo::set_syncpos_msg(size_t syncpos_msg) { this->syncpos_msg = syncpos_msg; }
-void entangle::ClientInfo::set_last_msg(size_t last_msg) { this->last_msg = last_msg; }
+void entangle::ClientInfo::set_last_client_msg(size_t last_msg) { this->last_client_msg = last_msg; }
+void entangle::ClientInfo::set_last_server_msg(size_t last_msg) { this->last_server_msg = last_msg; }
 void entangle::ClientInfo::set_is_valid(bool is_valid) { this->is_valid = is_valid; }
 
 entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port) : count(0) {
@@ -98,9 +100,17 @@ void entangle::EntangleServer::process(std::string buf) {
 			return;
 		} else if(msg.get_cmd().compare(entangle::EntangleMessage::cmd_connect) == 0) {
 		} else if(this->lookaside.count(msg.get_client_id()) != 0) {
-			this->node->push(msg.to_string(), this->lookaside.at(msg.get_client_id()).get_identifier(), this->lookaside.at(msg.get_client_id()).get_port());
+			if(msg.get_msg_id() == this->lookaside.at(msg.get_client_id()).get_last_client_msg() + 1) {
+				msg.set_msg_id(this->lookaside.at(msg.get_client_id()).get_last_server_msg() + 1);
+				this->node->push(msg.to_string(), this->lookaside.at(msg.get_client_id()).get_identifier(), this->lookaside.at(msg.get_client_id()).get_port());
+			} else {
+				// dropped message
+			}
+		// client not found
 		} else {
-			return;
+			msg.set_err(entangle::EntangleMessage::error_no_client);
+			msg.set_msg_id(0);
+			this->node->push(msg.to_string(), this->lookaside.at(msg.get_client_id()).get_identifier(), this->lookaside.at(msg.get_client_id()).get_port());
 		}
 		return;
 	} else {

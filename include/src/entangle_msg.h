@@ -27,6 +27,7 @@ namespace entangle {
 			bool get_is_invalid();
 
 			void set_err(size_t err);
+			void set_msg_id(size_t msg_id);
 
 			std::string to_string();
 
