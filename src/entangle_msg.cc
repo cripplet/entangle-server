@@ -31,7 +31,7 @@ entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args, bo
 		v.push_back(string.substr(curr, next - curr));
 		count++;
 	}
-	while (next != std::string::npos);
+	while (next != std::string::npos && v.size() <= 7 + n_args);
 	if(v.size() < 7 + n_args) {
 		if(!silent_fail) {
 			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
@@ -93,6 +93,8 @@ bool entangle::EntangleMessage::get_is_invalid() { return(this->is_invalid); }
 
 void entangle::EntangleMessage::set_err(size_t err) { this->err = err; }
 void entangle::EntangleMessage::set_msg_id(size_t msg_id) { this->msg_id = msg_id; }
+void entangle::EntangleMessage::set_args(std::vector<std::string> args) { this->args = args; }
+void entangle::EntangleMessage::set_tail(std::string tail) { this->tail = tail; }
 
 std::string entangle::EntangleMessage::to_string() {
 	std::stringstream buf;

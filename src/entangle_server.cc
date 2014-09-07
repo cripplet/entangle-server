@@ -8,6 +8,10 @@
 
 #include "src/entangle_server.h"
 
+/**
+ * entangle::ClientInfo
+ */
+
 entangle::ClientInfo::ClientInfo(std::string identifier, std::string hostname, size_t port, const std::shared_ptr<giga::File>& file) : id(identifier), hostname(hostname), port(port) {
 	this->client = file->open();
 }
@@ -35,10 +39,18 @@ void entangle::ClientInfo::set_last_client_msg(size_t last_msg) { this->last_cli
 void entangle::ClientInfo::set_last_server_msg(size_t last_msg) { this->last_server_msg = last_msg; }
 void entangle::ClientInfo::set_is_valid(bool is_valid) { this->is_valid = is_valid; }
 
+/**
+ * entangle::EntangleServer
+ */
+
+std::map<std::string, entangle::disp_func> entangle::EntangleServer::dispatch_table;
+
 entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port) : count(0) {
 	this->file = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5));
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
+	entangle::EntangleServer::dispatch_table.clear();
+	entangle::EntangleServer::dispatch_table[entangle::EntangleMessage::cmd_connect] = &entangle::EntangleServer::process_cmd_connect;
 }
 
 bool entangle::EntangleServer::get_status() { return(*(this->flag)); }
@@ -90,30 +102,41 @@ void entangle::EntangleServer::dn() {
 	this->file_lock = NULL;
 }
 
+void entangle::EntangleServer::process_cmd_connect(std::string buf) {}
+/*
+void entangle::EntangleServer::process_cmd_drop(std::string buf) {}
+void entangle::EntangleServer::process_cmd_resize(std::string buf) {}
+void entangle::EntangleServer::process_cmd_sync(std::string buf) {}
+void entangle::EntangleServer::process_cmd_syncpos(std::string buf) {}
+void entangle::EntangleServer::process_cmd_seek(std::string buf) {}
+void entangle::EntangleServer::process_cmd_overwrite(std::string buf) {}
+void entangle::EntangleServer::process_cmd_insert(std::string buf) {}
+void entangle::EntangleServer::process_cmd_erase(std::string buf) {}
+void entangle::EntangleServer::process_cmd_backspace(std::string buf) {}
+ */
 void entangle::EntangleServer::process(std::string buf) {
 	this->count++;
 	auto msg = entangle::EntangleMessage(buf, 0, true);
-	if(msg.get_is_invalid()) {
-		msg.set_err(entangle::EntangleMessage::error_invalid);
-		// drop the message if it is too unsalvagable
-		if(msg.get_cmd().compare("") == 0) {
+	// drop packet
+	if(msg.get_is_invalid()) { return; }
+	if(msg.get_cmd().compare("CONN") != 0) {
+		if(this->lookaside.count(msg.get_client_id()) == 0) {
 			return;
-		} else if(msg.get_cmd().compare(entangle::EntangleMessage::cmd_connect) == 0) {
-		} else if(this->lookaside.count(msg.get_client_id()) != 0) {
-			if(msg.get_msg_id() == this->lookaside.at(msg.get_client_id()).get_last_client_msg() + 1) {
-				msg.set_msg_id(this->lookaside.at(msg.get_client_id()).get_last_server_msg() + 1);
-				this->node->push(msg.to_string(), this->lookaside.at(msg.get_client_id()).get_identifier(), this->lookaside.at(msg.get_client_id()).get_port());
-			} else {
-				// dropped message
-			}
-		// client not found
-		} else {
-			msg.set_err(entangle::EntangleMessage::error_no_client);
-			msg.set_msg_id(0);
-			this->node->push(msg.to_string(), this->lookaside.at(msg.get_client_id()).get_identifier(), this->lookaside.at(msg.get_client_id()).get_port());
 		}
-		return;
-	} else {
-		this->node->push(msg.to_string(), "localhost", 8888);
+		auto info = this->lookaside.at(msg.get_client_id());
+		if((msg.get_cmd().compare("DROP") != 0) && (msg.get_msg_id() > info.get_last_client_msg() + 1)) {
+			msg.set_err(entangle::EntangleMessage::error_unexpected);
+			msg.set_args(std::vector<std::string> ());
+			msg.set_tail("");
+			msg.set_msg_id(info.get_last_server_msg() + 1);
+			info.set_last_server_msg(msg.get_msg_id());
+			this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
+			return;
+		}
+		if(msg.get_msg_id() < info.get_last_client_msg() + 1) {
+			return;
+		}
+
 	}
+	this->node->push(msg.to_string(), "localhost", 8888);
 }

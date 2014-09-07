@@ -28,13 +28,14 @@ namespace entangle {
 
 			void set_err(size_t err);
 			void set_msg_id(size_t msg_id);
+			void set_args(std::vector<std::string> args);
+			void set_tail(std::string tail);
 
 			std::string to_string();
 
 			static const size_t error_no_err = 0;
-			static const size_t error_invalid = 400;
+			static const size_t error_unexpected = 400;
 			static const size_t error_denied = 401;
-			static const size_t error_no_client = 404;
 			static const size_t error_unsync = 409;
 			static const size_t error_max_conn = 503;
 

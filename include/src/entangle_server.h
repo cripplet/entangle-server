@@ -58,6 +58,8 @@ namespace entangle {
 			bool is_valid;
 	};
 
+	class EntangleServer;
+	typedef void (EntangleServer::*disp_func)(std::string);
 	class EntangleServer {
 		public:
 			EntangleServer(std::string filename, size_t max_conn, size_t port);
@@ -78,8 +80,12 @@ namespace entangle {
 			std::thread node_t;
 			size_t count;
 
-			void process(std::string buf);
 			void dn();
+
+			void process(std::string buf);
+			void process_cmd_connect(std::string buf);
+
+			static std::map<std::string, disp_func> dispatch_table;
 	};
 }
 
