@@ -43,6 +43,7 @@ void entangle::ClientInfo::set_is_valid(bool is_valid) { this->is_valid = is_val
  * entangle::EntangleServer
  */
 
+// cf. http://bit.ly/1Ao5p36
 std::map<std::string, entangle::disp_func> entangle::EntangleServer::dispatch_table;
 
 entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port) : count(0) {
@@ -138,5 +139,13 @@ void entangle::EntangleServer::process(std::string buf) {
 		}
 
 	}
-	this->node->push(msg.to_string(), "localhost", 8888);
+	try {
+		// cf. http://bit.ly/1pF4Trb
+		(this->*entangle::EntangleServer::dispatch_table[msg.get_cmd()])(msg.to_string());
+	// command does not exist
+	} catch(const std::out_of_range& e) {
+		return;
+	}
+
+//	this->node->push(msg.to_string(), "localhost", 8888);
 }

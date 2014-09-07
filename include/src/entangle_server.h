@@ -58,6 +58,7 @@ namespace entangle {
 			bool is_valid;
 	};
 
+	// cf. http://bit.ly/1Ao5p36
 	class EntangleServer;
 	typedef void (EntangleServer::*disp_func)(std::string);
 	class EntangleServer {
