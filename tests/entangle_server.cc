@@ -1,4 +1,5 @@
 #include <csignal>
+#include <cstdlib>
 #include <memory>
 #include <unistd.h>
 
@@ -9,6 +10,7 @@
 #include "libs/msgpp/msg_node.h"
 
 #include "src/entangle_server.h"
+#include "src/msg_types.h"
 
 TEST_CASE("entangle|entangle_server-init") {
 	auto m = std::shared_ptr<entangle::EntangleServer> (new entangle::EntangleServer("tests/files/server-init", 10, 8088));
@@ -29,6 +31,7 @@ TEST_CASE("entangle|entangle_server-conn") {
 	while(!m->get_status());
 
 	auto c = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(8888));
+	c->push(entangle::EntangleMessageConnectRequest(rand(), "abcde", 8888).to_string(), "localhost", m->get_port());
 
 	raise(SIGINT);
 	tm.join();

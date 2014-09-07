@@ -1,6 +1,7 @@
 #include <sys/file.h>
 #include <memory>
 #include <thread>
+#include <unistd.h>
 
 #include <iostream>
 
@@ -39,6 +40,7 @@ entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, 
 }
 
 bool entangle::EntangleServer::get_status() { return(*(this->flag)); }
+size_t entangle::EntangleServer::get_port() { return(this->node->get_port()); }
 
 void entangle::EntangleServer::up() {
 	if(*(this->flag)) {
@@ -62,6 +64,7 @@ void entangle::EntangleServer::up() {
 			std::cout << this->node->pull() << std::endl;
 		}
 	}
+	sleep(1);
 	// process remaining items in queue
 	while(this->node->query()) {
 		std::cout << this->node->pull() << std::endl;

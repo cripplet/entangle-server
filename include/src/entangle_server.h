@@ -56,6 +56,7 @@ namespace entangle {
 			EntangleServer(std::string filename, size_t max_conn, size_t port);
 
 			bool get_status();
+			size_t get_port();
 
 			void up();
 
