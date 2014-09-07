@@ -34,8 +34,8 @@ TEST_CASE("entangle|entangle_msg") {
 }
 
 TEST_CASE("entangle|msg_types-conn") {
-	auto req = entangle::EntangleMessageConnectRequest(182, "pw", "server-pw");
-	REQUIRE(req.to_string().compare("0:182::pw:CONN:0:server-pw") == 0);
+	auto req = entangle::EntangleMessageConnectRequest(182, "pw", 9099, "server-pw");
+	REQUIRE(req.to_string().compare("0:182::pw:CONN:0:9099:server-pw") == 0);
 
 	auto res = entangle::EntangleMessageConnectResponse(182, "aEiOOf");
 	REQUIRE(res.to_string().compare("1:182:aEiOOf::CONN:0:") == 0);

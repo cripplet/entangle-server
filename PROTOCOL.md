@@ -49,7 +49,7 @@ Connection
 | `CLIENT_ID` | blank |
 | `AUTH` | blank or alphanumeric token |
 | `CMD` | `CONN` |
-| `AUX` | blank or an alphanumeric password |
+| `AUX` | `P:T`, where `P` is the client port, and `T` an optional alphanumeric server token |
 
 ### Response
 
