@@ -3,14 +3,12 @@
 #include <thread>
 #include <unistd.h>
 
-#include <iostream>
-
 #include "libs/giga/client.h"
 #include "libs/giga/file.h"
 
 #include "src/entangle_server.h"
 
-entangle::ClientInfo::ClientInfo(std::string identifier, const std::shared_ptr<giga::File>& file) : id(identifier) {
+entangle::ClientInfo::ClientInfo(std::string identifier, std::string hostname, size_t port, const std::shared_ptr<giga::File>& file) : id(identifier), hostname(hostname), port(port) {
 	this->client = file->open();
 }
 
@@ -24,6 +22,8 @@ size_t entangle::ClientInfo::get_sync_msg() { return(this->sync_msg); }
 size_t entangle::ClientInfo::get_syncpos_msg() { return(this->syncpos_msg); }
 size_t entangle::ClientInfo::get_last_msg() { return(this->last_msg); }
 bool entangle::ClientInfo::get_is_valid() { return(this->is_valid); }
+size_t entangle::ClientInfo::get_port() { return(this->port); }
+std::string entangle::ClientInfo::get_hostname() { return(this->hostname); }
 
 void entangle::ClientInfo::set_buf_begin(size_t buf_begin) { this->buf_begin = buf_begin; }
 void entangle::ClientInfo::set_buf_size(size_t buf_size) { this->buf_size = buf_size; }
@@ -33,7 +33,7 @@ void entangle::ClientInfo::set_syncpos_msg(size_t syncpos_msg) { this->syncpos_m
 void entangle::ClientInfo::set_last_msg(size_t last_msg) { this->last_msg = last_msg; }
 void entangle::ClientInfo::set_is_valid(bool is_valid) { this->is_valid = is_valid; }
 
-entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port) {
+entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port) : count(0) {
 	this->file = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5));
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
@@ -41,6 +41,7 @@ entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, 
 
 bool entangle::EntangleServer::get_status() { return(*(this->flag)); }
 size_t entangle::EntangleServer::get_port() { return(this->node->get_port()); }
+size_t entangle::EntangleServer::get_count() { return(this->count); }
 
 void entangle::EntangleServer::up() {
 	if(*(this->flag)) {
@@ -88,6 +89,7 @@ void entangle::EntangleServer::dn() {
 }
 
 void entangle::EntangleServer::process(std::string buf) {
+	this->count++;
 	auto msg = entangle::EntangleMessage(buf, 0, true);
 	if(msg.get_is_invalid()) {
 		msg.set_err(entangle::EntangleMessage::error_invalid);
@@ -96,9 +98,12 @@ void entangle::EntangleServer::process(std::string buf) {
 			return;
 		} else if(msg.get_cmd().compare(entangle::EntangleMessage::cmd_connect) == 0) {
 		} else if(this->lookaside.count(msg.get_client_id()) != 0) {
+			this->node->push(msg.to_string(), this->lookaside.at(msg.get_client_id()).get_identifier(), this->lookaside.at(msg.get_client_id()).get_port());
 		} else {
 			return;
 		}
 		return;
+	} else {
+		this->node->push(msg.to_string(), "localhost", 8888);
 	}
 }

@@ -18,7 +18,7 @@ const std::string entangle::EntangleMessage::cmd_insert = "INSERT";
 const std::string entangle::EntangleMessage::cmd_erase = "ERASE";
 const std::string entangle::EntangleMessage::cmd_backspace = "BACK";
 
-entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args, bool silent_fail) {
+entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args, bool silent_fail) : is_invalid(false) {
 	std::vector<std::string> v;
 
 	// cf. http://bit.ly/1o7a4Rq

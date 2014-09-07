@@ -16,9 +16,11 @@
 namespace entangle {
 	class ClientInfo {
 		public:
-			ClientInfo(std::string identifier, const std::shared_ptr<giga::File>& file);
+			ClientInfo(std::string identifier, std::string hostname, size_t get_port, const std::shared_ptr<giga::File>& file);
 
 			std::string get_identifier();
+			size_t get_port();
+			std::string get_hostname();
 			size_t get_buf_begin();
 			size_t get_buf_size();
 			std::string get_buffer();
@@ -41,6 +43,8 @@ namespace entangle {
 
 		private:
 			std::string id;
+			std::string hostname;
+			size_t port;
 			size_t buf_begin;
 			size_t buf_size;
 			std::string buffer;
@@ -57,6 +61,7 @@ namespace entangle {
 
 			bool get_status();
 			size_t get_port();
+			size_t get_count();
 
 			void up();
 
@@ -68,6 +73,7 @@ namespace entangle {
 			std::map<std::string, ClientInfo> lookaside;
 			size_t max_conn;
 			std::thread node_t;
+			size_t count;
 
 			void process(std::string buf);
 			void dn();
