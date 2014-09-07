@@ -6,13 +6,15 @@
 #include "libs/giga/client.h"
 #include "libs/giga/file.h"
 
+#include "src/entangle_msg.h"
 #include "src/entangle_server.h"
+#include "src/msg_types.h"
 
 /**
  * entangle::ClientInfo
  */
 
-entangle::ClientInfo::ClientInfo(std::string identifier, std::string hostname, size_t port, const std::shared_ptr<giga::File>& file) : id(identifier), hostname(hostname), port(port) {
+entangle::ClientInfo::ClientInfo(std::string identifier, std::string hostname, size_t port, const std::shared_ptr<giga::File>& file, std::string auth) : id(identifier), hostname(hostname), port(port), auth(auth) {
 	this->client = file->open();
 }
 
@@ -29,6 +31,7 @@ size_t entangle::ClientInfo::get_last_server_msg() { return(this->last_server_ms
 bool entangle::ClientInfo::get_is_valid() { return(this->is_valid); }
 size_t entangle::ClientInfo::get_port() { return(this->port); }
 std::string entangle::ClientInfo::get_hostname() { return(this->hostname); }
+std::string entangle::ClientInfo::get_auth() { return(this->auth); }
 
 void entangle::ClientInfo::set_buf_begin(size_t buf_begin) { this->buf_begin = buf_begin; }
 void entangle::ClientInfo::set_buf_size(size_t buf_size) { this->buf_size = buf_size; }
@@ -46,10 +49,11 @@ void entangle::ClientInfo::set_is_valid(bool is_valid) { this->is_valid = is_val
 // cf. http://bit.ly/1Ao5p36
 std::map<std::string, entangle::disp_func> entangle::EntangleServer::dispatch_table;
 
-entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port) : count(0) {
+entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port, std::string password) : count(0) {
 	this->file = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5));
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
+	this->password = password;
 	entangle::EntangleServer::dispatch_table.clear();
 	entangle::EntangleServer::dispatch_table[entangle::EntangleMessage::cmd_connect] = &entangle::EntangleServer::process_cmd_connect;
 }
@@ -103,7 +107,31 @@ void entangle::EntangleServer::dn() {
 	this->file_lock = NULL;
 }
 
-void entangle::EntangleServer::process_cmd_connect(std::string buf) {}
+void entangle::EntangleServer::process_cmd_connect(std::string buf) {
+	auto msg = entangle::EntangleMessage(buf, 2);
+	// denied access
+	if(this->get_password().compare(msg.get_tail()) != 0) {
+		auto info = this->lookaside.at(msg.get_client_id());
+		msg.set_err(entangle::EntangleMessage::error_denied);
+		msg.set_args();
+		msg.set_tail();
+		this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
+	}
+	// invalid port
+	int port;
+	try {
+		port = (size_t) stoll(msg.get_args().at(1));
+	} catch(const std::invalid_argument& e) {
+		return;
+	}
+	std::string id = std::to_string(rand());
+	auto info = entangle::ClientInfo(id, msg.get_args().at(0), port, NULL, msg.get_auth());
+	this->lookaside[id] = info;
+	auto res = entangle::EntangleMessageConnectResponse(info.get_last_server_msg() + 1, id);
+	info.set_last_server_msg(info.get_last_server_msg() + 1);
+	this->node->push(res.to_string(), info.get_hostname(), info.get_port());
+}
+
 /*
 void entangle::EntangleServer::process_cmd_drop(std::string buf) {}
 void entangle::EntangleServer::process_cmd_resize(std::string buf) {}
@@ -115,6 +143,7 @@ void entangle::EntangleServer::process_cmd_insert(std::string buf) {}
 void entangle::EntangleServer::process_cmd_erase(std::string buf) {}
 void entangle::EntangleServer::process_cmd_backspace(std::string buf) {}
  */
+
 void entangle::EntangleServer::process(std::string buf) {
 	this->count++;
 	auto msg = entangle::EntangleMessage(buf, 0, true);
@@ -125,35 +154,41 @@ void entangle::EntangleServer::process(std::string buf) {
 			return;
 		}
 		auto info = this->lookaside.at(msg.get_client_id());
-		if(entangle::EntangleServer::dispatch_table.count(msg.get_cmd()) == 0) {
-			msg.set_err(entangle::EntangleMessage::error_unimpl);
-			msg.set_args(std::vector<std::string> ());
-			msg.set_tail("");
+		// client auth token does not match
+		if(info.get_auth().compare(msg.get_auth()) != 0) {
+			msg.set_err(entangle::EntangleMessage::error_denied);
+			msg.set_args();
+			msg.set_tail();
 			msg.set_msg_id(info.get_last_server_msg() + 1);
 			info.set_last_server_msg(msg.get_msg_id());
 			this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
 		}
+		// unknown command
+		if(entangle::EntangleServer::dispatch_table.count(msg.get_cmd()) == 0) {
+			msg.set_err(entangle::EntangleMessage::error_unimpl);
+			msg.set_args();
+			msg.set_tail();
+			msg.set_msg_id(info.get_last_server_msg() + 1);
+			info.set_last_server_msg(msg.get_msg_id());
+			this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
+		}
+		// unexpected message
 		if((msg.get_cmd().compare("DROP") != 0) && (msg.get_msg_id() > info.get_last_client_msg() + 1)) {
 			msg.set_err(entangle::EntangleMessage::error_unexpected);
-			msg.set_args(std::vector<std::string> ());
-			msg.set_tail("");
+			msg.set_args();
+			msg.set_tail();
 			msg.set_msg_id(info.get_last_server_msg() + 1);
 			info.set_last_server_msg(msg.get_msg_id());
 			this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
 			return;
 		}
+		// drop resent message
 		if(msg.get_msg_id() < info.get_last_client_msg() + 1) {
 			return;
 		}
 
 	}
-	try {
-		// cf. http://bit.ly/1pF4Trb
-		(this->*entangle::EntangleServer::dispatch_table[msg.get_cmd()])(msg.to_string());
-	// command does not exist
-	} catch(const std::out_of_range& e) {
-		return;
-	}
 
-//	this->node->push(msg.to_string(), "localhost", 8888);
+	// dispatch command
+	(this->*entangle::EntangleServer::dispatch_table[msg.get_cmd()])(msg.to_string());
 }

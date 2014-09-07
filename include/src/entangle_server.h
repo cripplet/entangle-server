@@ -16,11 +16,12 @@
 namespace entangle {
 	class ClientInfo {
 		public:
-			ClientInfo(std::string identifier, std::string hostname, size_t get_port, const std::shared_ptr<giga::File>& file);
+			ClientInfo(std::string identifier, std::string hostname, size_t get_port, const std::shared_ptr<giga::File>& file, std::string auth = "");
 
 			std::string get_identifier();
 			size_t get_port();
 			std::string get_hostname();
+			std::string get_auth();
 			size_t get_buf_begin();
 			size_t get_buf_size();
 			std::string get_buffer();
@@ -47,6 +48,7 @@ namespace entangle {
 			std::string id;
 			std::string hostname;
 			size_t port;
+			std::string auth;
 			size_t buf_begin;
 			size_t buf_size;
 			std::string buffer;
@@ -63,7 +65,7 @@ namespace entangle {
 	typedef void (EntangleServer::*disp_func)(std::string);
 	class EntangleServer {
 		public:
-			EntangleServer(std::string filename, size_t max_conn, size_t port);
+			EntangleServer(std::string filename, size_t max_conn, size_t port, std::string password = "");
 
 			bool get_status();
 			size_t get_port();
@@ -78,10 +80,13 @@ namespace entangle {
 			std::shared_ptr<std::atomic<bool>> flag;
 			std::map<std::string, ClientInfo> lookaside;
 			size_t max_conn;
+			std::string password;
 			std::thread node_t;
 			size_t count;
 
 			void dn();
+
+			std::string get_password();
 
 			void process(std::string buf);
 			void process_cmd_connect(std::string buf);
