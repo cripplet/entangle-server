@@ -61,6 +61,7 @@ entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, 
 bool entangle::EntangleServer::get_status() { return(*(this->flag)); }
 size_t entangle::EntangleServer::get_port() { return(this->node->get_port()); }
 size_t entangle::EntangleServer::get_count() { return(this->count); }
+std::string entangle::EntangleServer::get_password() { return(this->password); }
 
 void entangle::EntangleServer::up() {
 	if(*(this->flag)) {
@@ -115,7 +116,7 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 		msg.set_err(entangle::EntangleMessage::error_denied);
 		msg.set_args();
 		msg.set_tail();
-		this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
+		this->node->push(msg.to_string(), info->get_hostname(), info->get_port());
 	}
 	// invalid port
 	int port;
@@ -125,11 +126,11 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 		return;
 	}
 	std::string id = std::to_string(rand());
-	auto info = entangle::ClientInfo(id, msg.get_args().at(0), port, NULL, msg.get_auth());
+	auto info = std::shared_ptr<entangle::ClientInfo> (new entangle::ClientInfo(id, msg.get_args().at(0), port, NULL, msg.get_auth()));
 	this->lookaside[id] = info;
-	auto res = entangle::EntangleMessageConnectResponse(info.get_last_server_msg() + 1, id);
-	info.set_last_server_msg(info.get_last_server_msg() + 1);
-	this->node->push(res.to_string(), info.get_hostname(), info.get_port());
+	auto res = entangle::EntangleMessageConnectResponse(info->get_last_server_msg() + 1, id);
+	info->set_last_server_msg(info->get_last_server_msg() + 1);
+	this->node->push(res.to_string(), info->get_hostname(), info->get_port());
 }
 
 /*
@@ -155,35 +156,35 @@ void entangle::EntangleServer::process(std::string buf) {
 		}
 		auto info = this->lookaside.at(msg.get_client_id());
 		// client auth token does not match
-		if(info.get_auth().compare(msg.get_auth()) != 0) {
+		if(info->get_auth().compare(msg.get_auth()) != 0) {
 			msg.set_err(entangle::EntangleMessage::error_denied);
 			msg.set_args();
 			msg.set_tail();
-			msg.set_msg_id(info.get_last_server_msg() + 1);
-			info.set_last_server_msg(msg.get_msg_id());
-			this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
+			msg.set_msg_id(info->get_last_server_msg() + 1);
+			info->set_last_server_msg(msg.get_msg_id());
+			this->node->push(msg.to_string(), info->get_hostname(), info->get_port());
 		}
 		// unknown command
 		if(entangle::EntangleServer::dispatch_table.count(msg.get_cmd()) == 0) {
 			msg.set_err(entangle::EntangleMessage::error_unimpl);
 			msg.set_args();
 			msg.set_tail();
-			msg.set_msg_id(info.get_last_server_msg() + 1);
-			info.set_last_server_msg(msg.get_msg_id());
-			this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
+			msg.set_msg_id(info->get_last_server_msg() + 1);
+			info->set_last_server_msg(msg.get_msg_id());
+			this->node->push(msg.to_string(), info->get_hostname(), info->get_port());
 		}
 		// unexpected message
-		if((msg.get_cmd().compare("DROP") != 0) && (msg.get_msg_id() > info.get_last_client_msg() + 1)) {
+		if((msg.get_cmd().compare("DROP") != 0) && (msg.get_msg_id() > info->get_last_client_msg() + 1)) {
 			msg.set_err(entangle::EntangleMessage::error_unexpected);
 			msg.set_args();
 			msg.set_tail();
-			msg.set_msg_id(info.get_last_server_msg() + 1);
-			info.set_last_server_msg(msg.get_msg_id());
-			this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
+			msg.set_msg_id(info->get_last_server_msg() + 1);
+			info->set_last_server_msg(msg.get_msg_id());
+			this->node->push(msg.to_string(), info->get_hostname(), info->get_port());
 			return;
 		}
 		// drop resent message
-		if(msg.get_msg_id() < info.get_last_client_msg() + 1) {
+		if(msg.get_msg_id() < info->get_last_client_msg() + 1) {
 			return;
 		}
 

@@ -78,7 +78,7 @@ namespace entangle {
 			std::shared_ptr<msgpp::MessageNode> node;
 			std::shared_ptr<giga::File> file;
 			std::shared_ptr<std::atomic<bool>> flag;
-			std::map<std::string, ClientInfo> lookaside;
+			std::map<std::string, std::shared_ptr<ClientInfo>> lookaside;
 			size_t max_conn;
 			std::string password;
 			std::thread node_t;
