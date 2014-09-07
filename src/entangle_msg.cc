@@ -18,7 +18,7 @@ const std::string entangle::EntangleMessage::cmd_insert = "INSERT";
 const std::string entangle::EntangleMessage::cmd_erase = "ERASE";
 const std::string entangle::EntangleMessage::cmd_backspace = "BACK";
 
-entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args) {
+entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args, bool silent_fail) {
 	std::vector<std::string> v;
 
 	// cf. http://bit.ly/1o7a4Rq
@@ -33,18 +33,30 @@ entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args) {
 	}
 	while (next != std::string::npos);
 	if(v.size() < 7 + n_args) {
-		throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+		if(!silent_fail) {
+			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+		}
+		this->is_invalid = true;
+		return;
 	}
 
 	try {
 		this->ack = (v.at(0).compare("") == 0) ? 0 : (bool) stol(v.at(0));
 		if((v.at(0).compare("") != 0) && stol(v.at(0)) > 1) {
-			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+			if(!silent_fail) {
+				throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+			}
+			this->is_invalid = true;
+			return;
 		}
 		this->msg_id = (v.at(1).compare("") == 0) ? 0 : (size_t) stol(v.at(1));
 		this->err = (v.at(5).compare("") == 0) ? 0 : (size_t) stol(v.at(5));
 	} catch(const std::invalid_argument& e) {
-		throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+		if(!silent_fail) {
+			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+		}
+		this->is_invalid = true;
+		return;
 	}
 	this->client_id = v.at(2);
 	this->auth = v.at(3);
@@ -77,6 +89,9 @@ std::string entangle::EntangleMessage::get_cmd() { return(this->cmd); }
 size_t entangle::EntangleMessage::get_err() { return(this->err); }
 std::vector<std::string> entangle::EntangleMessage::get_args() { return(this->args); }
 std::string entangle::EntangleMessage::get_tail() { return(this->tail); }
+bool entangle::EntangleMessage::get_is_invalid() { return(this->is_invalid); }
+
+void entangle::EntangleMessage::set_err(size_t err) { this->err = err; }
 
 std::string entangle::EntangleMessage::to_string() {
 	std::stringstream buf;

@@ -31,7 +31,7 @@ TEST_CASE("entangle|entangle_server-conn") {
 	while(!m->get_status());
 
 	auto c = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(8888));
-	c->push(entangle::EntangleMessageConnectRequest(rand(), "abcde", 8888).to_string(), "localhost", m->get_port());
+	c->push(entangle::EntangleMessageConnectRequest(rand(), "abcde", "localhost", 8888).to_string(), "localhost", m->get_port());
 
 	raise(SIGINT);
 	tm.join();

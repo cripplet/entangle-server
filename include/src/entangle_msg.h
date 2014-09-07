@@ -9,8 +9,10 @@ namespace entangle {
 		public:
 			/**
 			 * of the form ACK:MSG_ID:CLIENT_ID:AUTH:CMD:ERR:AUX
+			 *
+			 * if silent_fail is true, return with constructed object, and with ::invalid set to true
 			 */
-			EntangleMessage(std::string string, size_t n_args = 0);
+			EntangleMessage(std::string string, size_t n_args = 0, bool silent_fail = false);
 
 			EntangleMessage(bool ack, size_t msg_id, std::string client_id, std::string auth, std::string cmd, size_t err = error_no_err, std::vector<std::string> args = std::vector<std::string>(), std::string tail = "");
 
@@ -22,6 +24,9 @@ namespace entangle {
 			size_t get_err();
 			std::vector<std::string> get_args();
 			std::string get_tail();
+			bool get_is_invalid();
+
+			void set_err(size_t err);
 
 			std::string to_string();
 
@@ -53,6 +58,7 @@ namespace entangle {
 			size_t err;
 			std::vector<std::string> args;
 			std::string tail;
+			bool is_invalid;
 	};
 }
 

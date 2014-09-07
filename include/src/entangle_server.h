@@ -69,6 +69,7 @@ namespace entangle {
 			size_t max_conn;
 			std::thread node_t;
 
+			void process(std::string buf);
 			void dn();
 	};
 }

@@ -10,7 +10,8 @@ entangle::EntangleMessageResponse::EntangleMessageResponse(size_t msg_id, std::s
 	}
 }
 
-entangle::EntangleMessageConnectRequest::EntangleMessageConnectRequest(size_t msg_id, std::string auth, size_t port, std::string token) : entangle::EntangleMessage(false, msg_id, "", auth, entangle::EntangleMessage::cmd_connect) {
+entangle::EntangleMessageConnectRequest::EntangleMessageConnectRequest(size_t msg_id, std::string auth, std::string hostname, size_t port, std::string token) : entangle::EntangleMessage(false, msg_id, "", auth, entangle::EntangleMessage::cmd_connect) {
+	this->args.push_back(hostname);
 	this->args.push_back(std::to_string(port));
 	this->tail = token;
 }

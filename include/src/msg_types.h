@@ -14,7 +14,7 @@ namespace entangle {
 	 */
 	class EntangleMessageConnectRequest : public EntangleMessage {
 		public:
-			EntangleMessageConnectRequest(size_t msg_id, std::string auth, size_t port, std::string token = "");
+			EntangleMessageConnectRequest(size_t msg_id, std::string auth, std::string hostname, size_t port, std::string token = "");
 	};
 	class EntangleMessageConnectResponse : public EntangleMessageResponse {
 		public:

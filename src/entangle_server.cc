@@ -61,13 +61,13 @@ void entangle::EntangleServer::up() {
 	*(this->flag) = 1;
 	while(this->node->get_status()) {
 		while(this->node->query()) {
-			std::cout << this->node->pull() << std::endl;
+			this->process(this->node->pull());
 		}
 	}
 	sleep(1);
 	// process remaining items in queue
 	while(this->node->query()) {
-		std::cout << this->node->pull() << std::endl;
+		this->process(this->node->pull());
 	}
 	this->dn();
 }
@@ -85,4 +85,20 @@ void entangle::EntangleServer::dn() {
 	remove(f.c_str());
 	fclose(this->file_lock);
 	this->file_lock = NULL;
+}
+
+void entangle::EntangleServer::process(std::string buf) {
+	auto msg = entangle::EntangleMessage(buf, 0, true);
+	if(msg.get_is_invalid()) {
+		msg.set_err(entangle::EntangleMessage::error_invalid);
+		// drop the message if it is too unsalvagable
+		if(msg.get_cmd().compare("") == 0) {
+			return;
+		} else if(msg.get_cmd().compare(entangle::EntangleMessage::cmd_connect) == 0) {
+		} else if(this->lookaside.count(msg.get_client_id()) != 0) {
+		} else {
+			return;
+		}
+		return;
+	}
 }
