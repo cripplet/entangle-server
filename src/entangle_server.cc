@@ -125,6 +125,14 @@ void entangle::EntangleServer::process(std::string buf) {
 			return;
 		}
 		auto info = this->lookaside.at(msg.get_client_id());
+		if(entangle::EntangleServer::dispatch_table.count(msg.get_cmd()) == 0) {
+			msg.set_err(entangle::EntangleMessage::error_unimpl);
+			msg.set_args(std::vector<std::string> ());
+			msg.set_tail("");
+			msg.set_msg_id(info.get_last_server_msg() + 1);
+			info.set_last_server_msg(msg.get_msg_id());
+			this->node->push(msg.to_string(), info.get_hostname(), info.get_port());
+		}
 		if((msg.get_cmd().compare("DROP") != 0) && (msg.get_msg_id() > info.get_last_client_msg() + 1)) {
 			msg.set_err(entangle::EntangleMessage::error_unexpected);
 			msg.set_args(std::vector<std::string> ());

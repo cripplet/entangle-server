@@ -36,7 +36,8 @@ namespace entangle {
 			static const size_t error_no_err = 0;
 			static const size_t error_unexpected = 400;
 			static const size_t error_denied = 401;
-			static const size_t error_unsync = 409;
+			static const size_t error_unimpl = 401;
+			static const size_t error_desync = 409;
 			static const size_t error_max_conn = 503;
 
 			static const std::string cmd_connect;
