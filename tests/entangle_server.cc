@@ -25,12 +25,27 @@ TEST_CASE("entangle|entangle_server-init") {
 	tm.join();
 }
 
-TEST_CASE("entangle|entangle_server-conn") {
+TEST_CASE("entangle|entangle_server-drop") {
 	auto m = std::shared_ptr<entangle::EntangleServer> (new entangle::EntangleServer("tests/files/server-init", 10, 9999, "test-server"));
 	auto c = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(8888));
-
 	auto tm = std::thread(&entangle::EntangleServer::up, &*m);
 	auto tc = std::thread(&msgpp::MessageNode::up, &*c);
+	entangle::EntangleMessage msg;
+	sleep(1);
+	while(!m->get_status());
+
+	raise(SIGINT);
+	tc.join();
+	tm.join();
+}
+
+TEST_CASE("entangle|entangle_server-conn") {
+	auto m = std::shared_ptr<entangle::EntangleServer> (new entangle::EntangleServer("tests/files/server-init", 1, 9999, "test-server"));
+	auto c = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(8888));
+	auto e = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(7777));
+	auto tm = std::thread(&entangle::EntangleServer::up, &*m);
+	auto tc = std::thread(&msgpp::MessageNode::up, &*c);
+	auto te = std::thread(&msgpp::MessageNode::up, &*e);
 	entangle::EntangleMessage msg;
 	sleep(1);
 	while(!m->get_status());
@@ -72,7 +87,16 @@ TEST_CASE("entangle|entangle_server-conn") {
 	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_invalid);
 	REQUIRE(msg.get_client_id().compare("") == 0);
 
+	// max conn
+	e->push(entangle::EntangleMessageConnectRequest(0, "abcde", "localhost", 7777, "test-server").to_string(), "localhost", m->get_port());
+	sleep(1);
+	REQUIRE(m->get_count() == 6);
+	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(e->pull()));
+	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_max_conn);
+	REQUIRE(msg.get_client_id().compare("") == 0);
+
 	raise(SIGINT);
 	tc.join();
+	te.join();
 	tm.join();
 }

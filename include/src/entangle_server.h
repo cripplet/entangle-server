@@ -87,6 +87,7 @@ namespace entangle {
 			void dn();
 
 			std::string get_token();
+			size_t get_max_conn();
 
 			void process(std::string buf);
 			void process_cmd_connect(std::string buf);

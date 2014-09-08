@@ -3,6 +3,8 @@
 #include <thread>
 #include <unistd.h>
 
+#include <iostream>
+
 #include "libs/giga/client.h"
 #include "libs/giga/file.h"
 
@@ -51,9 +53,10 @@ std::map<std::string, entangle::disp_func> entangle::EntangleServer::dispatch_ta
 
 entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port, std::string token) : count(0) {
 	this->file = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
-	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5));
+	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5, max_conn + 1));
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
 	this->token = token;
+	this->max_conn = max_conn;
 	entangle::EntangleServer::dispatch_table.clear();
 	entangle::EntangleServer::dispatch_table[entangle::EntangleMessage::cmd_connect] = &entangle::EntangleServer::process_cmd_connect;
 }
@@ -62,6 +65,7 @@ bool entangle::EntangleServer::get_status() { return(*(this->flag)); }
 size_t entangle::EntangleServer::get_port() { return(this->node->get_port()); }
 size_t entangle::EntangleServer::get_count() { return(this->count); }
 std::string entangle::EntangleServer::get_token() { return(this->token); }
+size_t entangle::EntangleServer::get_max_conn() { return(this->max_conn); }
 
 void entangle::EntangleServer::up() {
 	if(*(this->flag)) {
@@ -108,9 +112,15 @@ void entangle::EntangleServer::dn() {
 	this->file_lock = NULL;
 }
 
+/**
+ * dispatch table stuff
+ */
+
 void entangle::EntangleServer::process_cmd_connect(std::string buf) {
+	std::cout << "entangle::EntangleServer::process_cmd_connect: " << buf << std::endl;
 	auto msg = entangle::EntangleMessage(buf, 2, true);
 	if(msg.get_is_invalid()) {
+		std::cout << "entangle::EntangleServer::process_cmd_connect: invalid constructor" << std::endl;
 		return;
 	}
 
@@ -119,6 +129,7 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 	try {
 		port = (size_t) stoll(msg.get_args().at(1));
 	} catch(const std::invalid_argument& e) {
+		std::cout << "entangle::EntangleServer::process_cmd_connect: invalid port" << std::endl;
 		return;
 	}
 
@@ -132,6 +143,7 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 			msg.set_tail();
 			msg.set_msg_id(0);
 			this->node->push(msg.to_string(), hostname, port);
+			std::cout << "entangle::EntangleServer::process_cmd_connect: double register" << std::endl;
 			return;
 		}
 	}
@@ -143,15 +155,29 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 		msg.set_tail();
 		msg.set_msg_id(0);
 		this->node->push(msg.to_string(), hostname, port);
+		std::cout << "entangle::EntangleServer::process_cmd_connect: denied" << std::endl;
+		return;
+	}
+
+	// max conn
+	if(this->lookaside.size() == this->get_max_conn()) {
+		msg.set_err(entangle::EntangleMessage::error_max_conn);
+		msg.set_args();
+		msg.set_tail();
+		msg.set_msg_id(0);
+		this->node->push(msg.to_string(), hostname, port);
+		std::cout << "entangle::EntangleServer::process_cmd_connect: max conn" << std::endl;
 		return;
 	}
 
 	// add to server
+	std::cout << "entangle::EntangleServer::process_cmd_connect: success" << std::endl;
 	std::string id = std::to_string(rand());
 	auto info = std::shared_ptr<entangle::ClientInfo> (new entangle::ClientInfo(id, msg.get_args().at(0), port, this->file, msg.get_auth()));
 	this->lookaside[id] = info;
 	auto res = entangle::EntangleMessageConnectResponse(info->get_last_server_msg() + 1, id);
 	info->set_last_server_msg(info->get_last_server_msg() + 1);
+	std::cout << "entangle::EntangleServer::process_cmd_connect: pushed " << res.to_string() << " to port " << info->get_port()  << std::endl;
 	this->node->push(res.to_string(), info->get_hostname(), info->get_port());
 }
 
@@ -167,6 +193,7 @@ void entangle::EntangleServer::process_cmd_erase(std::string buf) {}
 void entangle::EntangleServer::process_cmd_backspace(std::string buf) {}
  */
 
+// master dispatch
 void entangle::EntangleServer::process(std::string buf) {
 	this->count++;
 	auto msg = entangle::EntangleMessage(buf, 0, true);
