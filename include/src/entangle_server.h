@@ -91,6 +91,22 @@ namespace entangle {
 
 			void process(std::string buf);
 			void process_cmd_connect(std::string buf);
+			void process_cmd_drop(std::string buf);
+			/*
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			void process_cmd_drop(std::string buf);
+			 */
+
 
 			static std::map<std::string, disp_func> dispatch_table;
 	};

@@ -57,6 +57,7 @@ entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, 
 	this->max_conn = max_conn;
 	entangle::EntangleServer::dispatch_table.clear();
 	entangle::EntangleServer::dispatch_table[entangle::EntangleMessage::cmd_connect] = &entangle::EntangleServer::process_cmd_connect;
+	entangle::EntangleServer::dispatch_table[entangle::EntangleMessage::cmd_drop] = &entangle::EntangleServer::process_cmd_drop;
 }
 
 bool entangle::EntangleServer::get_status() { return(*(this->flag)); }
@@ -113,6 +114,21 @@ void entangle::EntangleServer::dn() {
 /**
  * dispatch table stuff
  */
+
+void entangle::EntangleServer::process_cmd_drop(std::string buf) {
+	auto msg = entangle::EntangleMessage(buf, 0, true);
+	if(msg.get_is_invalid()) {
+		return;
+	}
+
+	// drop from table
+	std::string id = std::to_string(rand());
+	auto info = this->lookaside[msg.get_client_id()];
+	this->lookaside.erase(msg.get_client_id());
+	auto res = entangle::EntangleMessageDropResponse(info->get_last_server_msg() + 1, id);
+	info->set_last_server_msg(info->get_last_server_msg() + 1);
+	this->node->push(res.to_string(), info->get_hostname(), info->get_port());
+}
 
 void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 	auto msg = entangle::EntangleMessage(buf, 2, true);
@@ -225,10 +241,10 @@ void entangle::EntangleServer::process(std::string buf) {
 			return;
 		}
 		// drop resent message
-		if(msg.get_msg_id() < info->get_last_client_msg() + 1) {
+		if((msg.get_cmd().compare("DROP") != 0) && (msg.get_msg_id() < info->get_last_client_msg() + 1)) {
 			return;
 		}
-
+		info->set_last_client_msg(msg.get_msg_id());
 	}
 
 	// dispatch command

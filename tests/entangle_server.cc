@@ -3,8 +3,6 @@
 #include <memory>
 #include <unistd.h>
 
-#include <iostream>
-
 #include "libs/catch/catch.hpp"
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
@@ -44,13 +42,33 @@ TEST_CASE("entangle|entangle_server-drop") {
 	std::string client_id = msg.get_client_id();
 
 	// wrong auth token
-	c->push(entangle::EntangleMessageDropRequest(0, client_id, "aaaaa").to_string(), "localhost", m->get_port());
+	c->push(entangle::EntangleMessageDropRequest(2, client_id, "aaaaa").to_string(), "localhost", m->get_port());
 	sleep(1);
 	REQUIRE(m->get_count() == 2);
 	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
 	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_denied);
 	REQUIRE(msg.get_cmd().compare("DROP") == 0);
 	REQUIRE(msg.get_client_id().compare(client_id) == 0);
+
+	// wrong command
+	std::string cmd = "0:3:";
+	cmd.append(client_id).append(":abcde:INVALID_CMD:0:");
+	c->push(cmd, "localhost", m->get_port());
+	sleep(1);
+	REQUIRE(m->get_count() == 3);
+	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
+	REQUIRE(msg.get_cmd().compare("INVALID_CMD") == 0);
+	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_unimpl);
+	REQUIRE(msg.get_client_id().compare(client_id) == 0);
+
+	// correct data
+	c->push(entangle::EntangleMessageDropRequest(0, client_id, "abcde").to_string(), "localhost", m->get_port());
+	sleep(1);
+	REQUIRE(m->get_count() == 4);
+	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
+	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_no_err);
+	REQUIRE(msg.get_cmd().compare("DROP") == 0);
+	REQUIRE(msg.get_client_id().compare(client_id) != 0);
 
 	raise(SIGINT);
 	tc.join();
@@ -80,19 +98,10 @@ TEST_CASE("entangle|entangle_server-conn") {
 	REQUIRE(m->get_count() == 2);
 	REQUIRE_THROWS_AS(c->pull(), exceptionpp::RuntimeError);
 
-	// wrong command
-	c->push("0:0::abcde:INVALID_CMD:0:localhost:8888:test-server", "localhost", m->get_port());
-	sleep(1);
-	REQUIRE(m->get_count() == 3);
-	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
-	REQUIRE(msg.get_cmd().compare("INVALID_CMD") == 0);
-	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_unimpl);
-	REQUIRE(msg.get_client_id().compare("") == 0);
-
 	// wrong server token
 	c->push(entangle::EntangleMessageConnectRequest(0, "abcde", "localhost", 8888).to_string(), "localhost", m->get_port());
 	sleep(1);
-	REQUIRE(m->get_count() == 4);
+	REQUIRE(m->get_count() == 3);
 	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
 	REQUIRE(msg.get_cmd().compare("CONN") == 0);
 	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_denied);
@@ -101,7 +110,7 @@ TEST_CASE("entangle|entangle_server-conn") {
 	// correct data
 	c->push(entangle::EntangleMessageConnectRequest(0, "abcde", "localhost", 8888, "test-server").to_string(), "localhost", m->get_port());
 	sleep(1);
-	REQUIRE(m->get_count() == 5);
+	REQUIRE(m->get_count() == 4);
 	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
 	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_no_err);
 	REQUIRE(msg.get_client_id().compare("") != 0);
@@ -109,7 +118,7 @@ TEST_CASE("entangle|entangle_server-conn") {
 	// double registry
 	c->push(entangle::EntangleMessageConnectRequest(0, "abcde", "localhost", 8888, "test-server").to_string(), "localhost", m->get_port());
 	sleep(1);
-	REQUIRE(m->get_count() == 6);
+	REQUIRE(m->get_count() == 5);
 	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
 	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_invalid);
 	REQUIRE(msg.get_client_id().compare("") == 0);
@@ -117,7 +126,7 @@ TEST_CASE("entangle|entangle_server-conn") {
 	// max conn
 	e->push(entangle::EntangleMessageConnectRequest(0, "abcde", "localhost", 7777, "test-server").to_string(), "localhost", m->get_port());
 	sleep(1);
-	REQUIRE(m->get_count() == 7);
+	REQUIRE(m->get_count() == 6);
 	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(e->pull()));
 	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_max_conn);
 	REQUIRE(msg.get_client_id().compare("") == 0);
