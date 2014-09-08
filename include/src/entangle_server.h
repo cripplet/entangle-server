@@ -65,7 +65,7 @@ namespace entangle {
 	typedef void (EntangleServer::*disp_func)(std::string);
 	class EntangleServer {
 		public:
-			EntangleServer(std::string filename, size_t max_conn, size_t port, std::string password = "");
+			EntangleServer(std::string filename, size_t max_conn, size_t port, std::string token = "");
 
 			bool get_status();
 			size_t get_port();
@@ -80,13 +80,13 @@ namespace entangle {
 			std::shared_ptr<std::atomic<bool>> flag;
 			std::map<std::string, std::shared_ptr<ClientInfo>> lookaside;
 			size_t max_conn;
-			std::string password;
+			std::string token;
 			std::thread node_t;
 			size_t count;
 
 			void dn();
 
-			std::string get_password();
+			std::string get_token();
 
 			void process(std::string buf);
 			void process_cmd_connect(std::string buf);

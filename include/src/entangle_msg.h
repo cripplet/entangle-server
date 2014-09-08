@@ -7,6 +7,9 @@
 namespace entangle {
 	class EntangleMessage {
 		public:
+			// default constructor
+			EntangleMessage();
+
 			/**
 			 * of the form ACK:MSG_ID:CLIENT_ID:AUTH:CMD:ERR:AUX
 			 *

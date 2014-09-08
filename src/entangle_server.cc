@@ -51,11 +51,11 @@ void entangle::ClientInfo::set_is_valid(bool is_valid) { this->is_valid = is_val
 // cf. http://bit.ly/1Ao5p36
 std::map<std::string, entangle::disp_func> entangle::EntangleServer::dispatch_table;
 
-entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port, std::string password) : count(0) {
+entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, size_t port, std::string token) : count(0) {
 	this->file = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5));
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
-	this->password = password;
+	this->token = token;
 	entangle::EntangleServer::dispatch_table.clear();
 	entangle::EntangleServer::dispatch_table[entangle::EntangleMessage::cmd_connect] = &entangle::EntangleServer::process_cmd_connect;
 }
@@ -63,7 +63,7 @@ entangle::EntangleServer::EntangleServer(std::string filename, size_t max_conn, 
 bool entangle::EntangleServer::get_status() { return(*(this->flag)); }
 size_t entangle::EntangleServer::get_port() { return(this->node->get_port()); }
 size_t entangle::EntangleServer::get_count() { return(this->count); }
-std::string entangle::EntangleServer::get_password() { return(this->password); }
+std::string entangle::EntangleServer::get_token() { return(this->token); }
 
 void entangle::EntangleServer::up() {
 	if(*(this->flag)) {
@@ -111,17 +111,8 @@ void entangle::EntangleServer::dn() {
 }
 
 void entangle::EntangleServer::process_cmd_connect(std::string buf) {
-	std::cout << "BUFFER IS: " << buf << std::endl;
 	auto msg = entangle::EntangleMessage(buf, 2);
-	std::cout << "exited msg" << std::endl;
-	// denied access
-	if(this->get_password().compare(msg.get_tail()) != 0) {
-		auto info = this->lookaside.at(msg.get_client_id());
-		msg.set_err(entangle::EntangleMessage::error_denied);
-		msg.set_args();
-		msg.set_tail();
-		this->node->push(msg.to_string(), info->get_hostname(), info->get_port());
-	}
+
 	// invalid port
 	int port;
 	try {
@@ -129,12 +120,23 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 	} catch(const std::invalid_argument& e) {
 		return;
 	}
+
+	// denied access
+	if(this->get_token().compare(msg.get_tail()) != 0) {
+		msg.set_err(entangle::EntangleMessage::error_denied);
+		std::string hostname = msg.get_args().at(0);
+		msg.set_args();
+		msg.set_tail();
+		msg.set_msg_id(0);
+		this->node->push(msg.to_string(), hostname, port);
+		return;
+	}
+
+	// add to server
 	std::string id = std::to_string(rand());
-	auto info = std::shared_ptr<entangle::ClientInfo> (new entangle::ClientInfo(id, msg.get_args().at(0), port, NULL, msg.get_auth()));
+	auto info = std::shared_ptr<entangle::ClientInfo> (new entangle::ClientInfo(id, msg.get_args().at(0), port, this->file, msg.get_auth()));
 	this->lookaside[id] = info;
-	std::cout << "ABOUT TO CREATE RESPONSE" << std::endl;
 	auto res = entangle::EntangleMessageConnectResponse(info->get_last_server_msg() + 1, id);
-	std::cout << "CREATED RESPONSE" << std::endl;
 	info->set_last_server_msg(info->get_last_server_msg() + 1);
 	this->node->push(res.to_string(), info->get_hostname(), info->get_port());
 }

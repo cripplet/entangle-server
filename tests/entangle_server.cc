@@ -24,7 +24,7 @@ TEST_CASE("entangle|entangle_server-init") {
 }
 
 TEST_CASE("entangle|entangle_server-conn") {
-	auto m = std::shared_ptr<entangle::EntangleServer> (new entangle::EntangleServer("tests/files/server-init", 10, 9999));
+	auto m = std::shared_ptr<entangle::EntangleServer> (new entangle::EntangleServer("tests/files/server-init", 10, 9999, "test-server"));
 	auto c = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(8888));
 
 	auto tm = std::thread(&entangle::EntangleServer::up, &*m);
@@ -37,9 +37,13 @@ TEST_CASE("entangle|entangle_server-conn") {
 
 	REQUIRE(m->get_count() == 1);
 
+	entangle::EntangleMessage msg;
+	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull("", true)));
+	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_denied);
+	REQUIRE(msg.get_client_id().compare("") == 0);
+	REQUIRE(msg.get_msg_id() == 0);
+
 	raise(SIGINT);
 	tc.join();
 	tm.join();
-
-	REQUIRE_NOTHROW(c->pull());
 }
