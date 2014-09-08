@@ -3,6 +3,8 @@
 #include <thread>
 #include <unistd.h>
 
+#include <iostream>
+
 #include "libs/giga/client.h"
 #include "libs/giga/file.h"
 
@@ -109,7 +111,9 @@ void entangle::EntangleServer::dn() {
 }
 
 void entangle::EntangleServer::process_cmd_connect(std::string buf) {
+	std::cout << "BUFFER IS: " << buf << std::endl;
 	auto msg = entangle::EntangleMessage(buf, 2);
+	std::cout << "exited msg" << std::endl;
 	// denied access
 	if(this->get_password().compare(msg.get_tail()) != 0) {
 		auto info = this->lookaside.at(msg.get_client_id());
@@ -128,7 +132,9 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 	std::string id = std::to_string(rand());
 	auto info = std::shared_ptr<entangle::ClientInfo> (new entangle::ClientInfo(id, msg.get_args().at(0), port, NULL, msg.get_auth()));
 	this->lookaside[id] = info;
+	std::cout << "ABOUT TO CREATE RESPONSE" << std::endl;
 	auto res = entangle::EntangleMessageConnectResponse(info->get_last_server_msg() + 1, id);
+	std::cout << "CREATED RESPONSE" << std::endl;
 	info->set_last_server_msg(info->get_last_server_msg() + 1);
 	this->node->push(res.to_string(), info->get_hostname(), info->get_port());
 }

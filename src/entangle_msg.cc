@@ -34,7 +34,7 @@ entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args, bo
 	while (next != std::string::npos && v.size() <= 7 + n_args);
 	if(v.size() < 7 + n_args) {
 		if(!silent_fail) {
-			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input size"));
 		}
 		this->is_invalid = true;
 		return;
@@ -44,7 +44,7 @@ entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args, bo
 		this->ack = (v.at(0).compare("") == 0) ? 0 : (bool) stol(v.at(0));
 		if((v.at(0).compare("") != 0) && stol(v.at(0)) > 1) {
 			if(!silent_fail) {
-				throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+				throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid ACK value"));
 			}
 			this->is_invalid = true;
 			return;
@@ -53,7 +53,7 @@ entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args, bo
 		this->err = (v.at(5).compare("") == 0) ? 0 : (size_t) stol(v.at(5));
 	} catch(const std::invalid_argument& e) {
 		if(!silent_fail) {
-			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "invalid input"));
+			throw(exceptionpp::InvalidOperation("entangle::EntangleMessage::EntangleMessage", "could not convert argument to numeric value"));
 		}
 		this->is_invalid = true;
 		return;
@@ -100,10 +100,7 @@ std::string entangle::EntangleMessage::to_string() {
 	std::stringstream buf;
 	buf << this->get_ack() << ":" << this->get_msg_id() << ":" << this->get_client_id() << ":" << this->get_auth() << ":" << this->get_cmd() << ":" << this->get_err() << ":";
 	for(size_t i = 0; i < this->get_args().size(); ++i) {
-		buf << this->get_args().at(i);
-		if((i < this->get_args().size() - 1) || (this->tail.compare("") != 0)) {
-			buf << ":";
-		}
+		buf << this->get_args().at(i) << ":";
 	}
 	buf << this->get_tail();
 	return(buf.str());
