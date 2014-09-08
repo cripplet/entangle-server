@@ -40,8 +40,9 @@ entangle::EntangleMessage::EntangleMessage(std::string string, size_t n_args, bo
 		this->is_invalid = true;
 		return;
 	}
-	if(string.at(string.length() - 1) == ':') {
-		v.push_back("");
+	// tail args
+	if(next != std::string::npos && (next + 1 != std::string::npos)) {
+		v.push_back(string.substr(next + 1));
 	}
 
 	try {

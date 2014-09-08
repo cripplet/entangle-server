@@ -3,6 +3,8 @@
 #include <memory>
 #include <unistd.h>
 
+#include <iostream>
+
 #include "libs/catch/catch.hpp"
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
@@ -29,19 +31,46 @@ TEST_CASE("entangle|entangle_server-conn") {
 
 	auto tm = std::thread(&entangle::EntangleServer::up, &*m);
 	auto tc = std::thread(&msgpp::MessageNode::up, &*c);
+	entangle::EntangleMessage msg;
 	sleep(1);
 	while(!m->get_status());
 
-	c->push(entangle::EntangleMessageConnectRequest(rand(), "abcde", "localhost", 8888).to_string(), "localhost", m->get_port());
+	// drop nonsense packets
+	c->push("random nonsense", "localhost", m->get_port());
 	sleep(1);
-
 	REQUIRE(m->get_count() == 1);
+	REQUIRE_THROWS_AS(c->pull(), exceptionpp::RuntimeError);
 
-	entangle::EntangleMessage msg;
-	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull("", true)));
+	// drop wrong port
+	c->push("0:0::abcde:CONN:0:localhost:aaaa:test-server", "localhost", m->get_port());
+	sleep(1);
+	REQUIRE(m->get_count() == 2);
+	REQUIRE_THROWS_AS(c->pull(), exceptionpp::RuntimeError);
+
+	// wrong server token
+	c->push(entangle::EntangleMessageConnectRequest(0, "abcde", "localhost", 8888).to_string(), "localhost", m->get_port());
+	sleep(1);
+	REQUIRE(m->get_count() == 3);
+	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
+	REQUIRE(msg.get_cmd().compare("CONN") == 0);
 	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_denied);
 	REQUIRE(msg.get_client_id().compare("") == 0);
-	REQUIRE(msg.get_msg_id() == 0);
+
+	// correct data
+	c->push(entangle::EntangleMessageConnectRequest(0, "abcde", "localhost", 8888, "test-server").to_string(), "localhost", m->get_port());
+	sleep(1);
+	REQUIRE(m->get_count() == 4);
+	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
+	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_no_err);
+	REQUIRE(msg.get_client_id().compare("") != 0);
+
+	// double registry
+	c->push(entangle::EntangleMessageConnectRequest(0, "abcde", "localhost", 8888, "test-server").to_string(), "localhost", m->get_port());
+	sleep(1);
+	REQUIRE(m->get_count() == 5);
+	REQUIRE_NOTHROW(msg = entangle::EntangleMessage(c->pull()));
+	REQUIRE(msg.get_err() == entangle::EntangleMessage::error_invalid);
+	REQUIRE(msg.get_client_id().compare("") == 0);
 
 	raise(SIGINT);
 	tc.join();

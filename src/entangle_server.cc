@@ -3,8 +3,6 @@
 #include <thread>
 #include <unistd.h>
 
-#include <iostream>
-
 #include "libs/giga/client.h"
 #include "libs/giga/file.h"
 
@@ -111,20 +109,36 @@ void entangle::EntangleServer::dn() {
 }
 
 void entangle::EntangleServer::process_cmd_connect(std::string buf) {
-	auto msg = entangle::EntangleMessage(buf, 2);
+	auto msg = entangle::EntangleMessage(buf, 2, true);
+	if(msg.get_is_invalid()) {
+		return;
+	}
 
 	// invalid port
-	int port;
+	size_t port;
 	try {
 		port = (size_t) stoll(msg.get_args().at(1));
 	} catch(const std::invalid_argument& e) {
 		return;
 	}
 
+	std::string hostname = msg.get_args().at(0);
+
+	// double register -- clients which have already received a successful CONN response shall ignore this packet
+	for(std::map<std::string, std::shared_ptr<entangle::ClientInfo>>::iterator it = this->lookaside.begin(); it != this->lookaside.end(); ++it) {
+		if((hostname.compare(it->second->get_hostname()) == 0) && (port == it->second->get_port())) {
+			msg.set_err(entangle::EntangleMessage::error_invalid);
+			msg.set_args();
+			msg.set_tail();
+			msg.set_msg_id(0);
+			this->node->push(msg.to_string(), hostname, port);
+			return;
+		}
+	}
+
 	// denied access
 	if(this->get_token().compare(msg.get_tail()) != 0) {
 		msg.set_err(entangle::EntangleMessage::error_denied);
-		std::string hostname = msg.get_args().at(0);
 		msg.set_args();
 		msg.set_tail();
 		msg.set_msg_id(0);
