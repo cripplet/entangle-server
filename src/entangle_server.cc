@@ -3,8 +3,6 @@
 #include <thread>
 #include <unistd.h>
 
-#include <iostream>
-
 #include "libs/giga/client.h"
 #include "libs/giga/file.h"
 
@@ -196,15 +194,6 @@ void entangle::EntangleServer::process(std::string buf) {
 			return;
 		}
 		auto info = this->lookaside.at(msg.get_client_id());
-		// client auth token does not match
-		if(info->get_auth().compare(msg.get_auth()) != 0) {
-			msg.set_err(entangle::EntangleMessage::error_denied);
-			msg.set_args();
-			msg.set_tail();
-			msg.set_msg_id(info->get_last_server_msg() + 1);
-			info->set_last_server_msg(msg.get_msg_id());
-			this->node->push(msg.to_string(), info->get_hostname(), info->get_port());
-		}
 		// unknown command
 		if(entangle::EntangleServer::dispatch_table.count(msg.get_cmd()) == 0) {
 			msg.set_err(entangle::EntangleMessage::error_unimpl);
@@ -213,6 +202,17 @@ void entangle::EntangleServer::process(std::string buf) {
 			msg.set_msg_id(info->get_last_server_msg() + 1);
 			info->set_last_server_msg(msg.get_msg_id());
 			this->node->push(msg.to_string(), info->get_hostname(), info->get_port());
+			return;
+		}
+		// client auth token does not match
+		if(info->get_auth().compare(msg.get_auth()) != 0) {
+			msg.set_err(entangle::EntangleMessage::error_denied);
+			msg.set_args();
+			msg.set_tail();
+			msg.set_msg_id(info->get_last_server_msg() + 1);
+			info->set_last_server_msg(msg.get_msg_id());
+			this->node->push(msg.to_string(), info->get_hostname(), info->get_port());
+			return;
 		}
 		// unexpected message
 		if((msg.get_cmd().compare("DROP") != 0) && (msg.get_msg_id() > info->get_last_client_msg() + 1)) {
