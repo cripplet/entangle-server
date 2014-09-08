@@ -117,10 +117,8 @@ void entangle::EntangleServer::dn() {
  */
 
 void entangle::EntangleServer::process_cmd_connect(std::string buf) {
-	std::cout << "entangle::EntangleServer::process_cmd_connect: " << buf << std::endl;
 	auto msg = entangle::EntangleMessage(buf, 2, true);
 	if(msg.get_is_invalid()) {
-		std::cout << "entangle::EntangleServer::process_cmd_connect: invalid constructor" << std::endl;
 		return;
 	}
 
@@ -129,7 +127,6 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 	try {
 		port = (size_t) stoll(msg.get_args().at(1));
 	} catch(const std::invalid_argument& e) {
-		std::cout << "entangle::EntangleServer::process_cmd_connect: invalid port" << std::endl;
 		return;
 	}
 
@@ -143,7 +140,6 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 			msg.set_tail();
 			msg.set_msg_id(0);
 			this->node->push(msg.to_string(), hostname, port);
-			std::cout << "entangle::EntangleServer::process_cmd_connect: double register" << std::endl;
 			return;
 		}
 	}
@@ -155,7 +151,6 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 		msg.set_tail();
 		msg.set_msg_id(0);
 		this->node->push(msg.to_string(), hostname, port);
-		std::cout << "entangle::EntangleServer::process_cmd_connect: denied" << std::endl;
 		return;
 	}
 
@@ -166,18 +161,15 @@ void entangle::EntangleServer::process_cmd_connect(std::string buf) {
 		msg.set_tail();
 		msg.set_msg_id(0);
 		this->node->push(msg.to_string(), hostname, port);
-		std::cout << "entangle::EntangleServer::process_cmd_connect: max conn" << std::endl;
 		return;
 	}
 
 	// add to server
-	std::cout << "entangle::EntangleServer::process_cmd_connect: success" << std::endl;
 	std::string id = std::to_string(rand());
 	auto info = std::shared_ptr<entangle::ClientInfo> (new entangle::ClientInfo(id, msg.get_args().at(0), port, this->file, msg.get_auth()));
 	this->lookaside[id] = info;
 	auto res = entangle::EntangleMessageConnectResponse(info->get_last_server_msg() + 1, id);
 	info->set_last_server_msg(info->get_last_server_msg() + 1);
-	std::cout << "entangle::EntangleServer::process_cmd_connect: pushed " << res.to_string() << " to port " << info->get_port()  << std::endl;
 	this->node->push(res.to_string(), info->get_hostname(), info->get_port());
 }
 
