@@ -3,6 +3,11 @@ entangle-server
 
 Concurrent File Editor Server
 
+Note
+----
+
+This is on hold for the time being as I do some literature reading.
+
 Overview
 ----
 
