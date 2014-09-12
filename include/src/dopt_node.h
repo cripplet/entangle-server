@@ -44,6 +44,11 @@ namespace entangle {
 	 * the auxiliary info for an OTNode
 	 */
 	class OTNodeLink {
+		public:
+			OTNodeLink();
+			OTNodeLink(std::string hostname, size_t port, sit_t id);
+			sit_t get_identifier();
+
 		private:
 			/**
 			 * variable names are from the paper
@@ -66,8 +71,7 @@ namespace entangle {
 	 */
 	class OTNode {
 		public:
-			OTNode(std::string hostname, size_t port, size_t max_conn);
-			size_t get_identifier();
+			OTNode(size_t port, size_t max_conn);
 			std::string get_context();
 
 			// void local_update();
@@ -79,8 +83,9 @@ namespace entangle {
 			void up();
 			void dn();
 
-			void join();
-			void drop();
+			std::string enc_upd_t(upd_t arg);
+			upd_t dec_upd_t(std::string arg);
+			bool cmp_upd_t(upd_t s, upd_t o);
 
 		private:
 			std::shared_ptr<std::atomic<bool>> flag;
@@ -89,6 +94,7 @@ namespace entangle {
 
 			obj_t x;
 			std::map<sit_t, OTNodeLink> links;
+			OTNodeLink self;
 
 			// differs from the paper -- we're doing the brunt of the work here instead of returning update functions
 			// this still *functions* as the transformation matrix, but returns the function *args*, not the *function*
