@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <iostream>
+
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
 
@@ -47,9 +48,7 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->self = entangle::OTNodeLink("localhost", port, rand());
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
 }
-entangle::OTNode::~OTNode() {
-	this->dn();
-}
+entangle::OTNode::~OTNode() { this->dn(); }
 
 std::string entangle::OTNode::enc_upd_t(entangle::upd_t arg) {
 	std::stringstream buf;
@@ -89,7 +88,7 @@ void entangle::OTNode::up() {
 	if(*(this->flag) == 1) {
 		return;
 	}
-	*(this->flag) == 1;
+	*(this->flag) = 1;
 	this->daemon = std::shared_ptr<std::thread> (new std::thread(&msgpp::MessageNode::up, &*(this->node)));
 }
 
@@ -97,7 +96,7 @@ void entangle::OTNode::dn() {
 	if(*(this->flag) == 0) {
 		return;
 	}
-	*(this->flag) == 0;
+	*(this->flag) = 0;
 	raise(SIGINT);
 	this->daemon->join();
 }
