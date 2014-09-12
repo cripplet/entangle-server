@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "libs/msgpp/msg_node.h"
+
 /**
  * a node from the Cormack dOPT tree algorithm
  *
@@ -20,21 +22,23 @@ namespace entangle {
 	typedef size_t sit_t;
 	typedef std::string obj_t;
 	// workaround C++ strict typing -- we need the function args as input into the transformation matrix
+	typedef uint8_t func_type;
+	const func_type ins = 0;
+	const func_type del = 1;
 	typedef struct {
-		uint8_t type;
+		func_type type;
 		size_t pos;
 		char c;
 	} upd_t;
 	typedef std::map<sit_t, size_t> vec_t;
 	typedef std::map<size_t, upd_t> log_t;
+	// queue element
 	typedef struct {
 		sit_t s;
 		vec_t v;
 		upd_t u;
 	} qel_t;
 	typedef std::vector<qel_t> q_t;
-	const bool ins = 0;
-	const bool del = 1;
 
 	/**
 	 * the auxiliary info for an OTNode
@@ -80,6 +84,7 @@ namespace entangle {
 
 		private:
 			std::shared_ptr<std::atomic<bool>> flag;
+			std::shared_ptr<msgpp::MessageNode> node;
 			size_t max_conn;
 
 			obj_t x;
