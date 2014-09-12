@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "libs/msgpp/msg_node.h"
@@ -72,6 +73,8 @@ namespace entangle {
 	class OTNode {
 		public:
 			OTNode(size_t port, size_t max_conn);
+			~OTNode();
+
 			std::string get_context();
 
 			// void local_update();
@@ -91,6 +94,7 @@ namespace entangle {
 			std::shared_ptr<std::atomic<bool>> flag;
 			std::shared_ptr<msgpp::MessageNode> node;
 			size_t max_conn;
+			std::shared_ptr<std::thread> daemon;
 
 			obj_t x;
 			std::map<sit_t, OTNodeLink> links;

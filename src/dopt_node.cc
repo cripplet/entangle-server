@@ -47,6 +47,9 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->self = entangle::OTNodeLink("localhost", port, rand());
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
 }
+entangle::OTNode::~OTNode() {
+	this->dn();
+}
 
 std::string entangle::OTNode::enc_upd_t(entangle::upd_t arg) {
 	std::stringstream buf;
@@ -81,6 +84,23 @@ bool entangle::OTNode::cmp_upd_t(entangle::upd_t s, entangle::upd_t o) {
 	return((s.type == o.type) && (s.pos == o.pos) && (s.c == o.c));
 }
 
+// start listening for active packets
+void entangle::OTNode::up() {
+	if(*(this->flag) == 1) {
+		return;
+	}
+	*(this->flag) == 1;
+	this->daemon = std::shared_ptr<std::thread> (new std::thread(&msgpp::MessageNode::up, &*(this->node)));
+}
+
+void entangle::OTNode::dn() {
+	if(*(this->flag) == 0) {
+		return;
+	}
+	*(this->flag) == 0;
+	raise(SIGINT);
+	this->daemon->join();
+}
 /*
 
 			void up();
