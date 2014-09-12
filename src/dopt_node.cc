@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include <iostream>
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
 
@@ -53,8 +54,26 @@ std::string entangle::OTNode::enc_upd_t(entangle::upd_t arg) {
 	return(buf.str());
 }
 
+/**
+ * expected format: T:P:C
+ */
 entangle::upd_t entangle::OTNode::dec_upd_t(std::string arg) {
 	entangle::upd_t u = { 0, 0, '\0' };
+	// cf. http://bit.ly/1o7a4Rq
+	size_t curr;
+	size_t next = -1;
+	std::vector<std::string> v;
+	do {
+		curr = next + 1;
+		next = arg.find_first_of(":", curr);
+		v.push_back(arg.substr(curr, next - curr));
+	} while (next != std::string::npos);
+	if(v.size() != 3) {
+		return(u);
+	}
+	u.type = (entangle::func_type) std::stoll(v.at(0));
+	u.pos = (size_t) std::stoll(v.at(1));
+	u.c = (uint8_t) v.at(2).at(0);
 	return(u);
 }
 
