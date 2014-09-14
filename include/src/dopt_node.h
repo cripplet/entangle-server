@@ -4,6 +4,7 @@
 #include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -48,7 +49,10 @@ namespace entangle {
 		public:
 			OTNodeLink();
 			OTNodeLink(std::string hostname, size_t port, sit_t id);
+
 			sit_t get_identifier();
+			size_t get_port();
+			std::string get_hostname();
 
 		private:
 			/**
@@ -90,6 +94,12 @@ namespace entangle {
 			upd_t dec_upd_t(std::string arg);
 			bool cmp_upd_t(upd_t s, upd_t o);
 
+			// calls which will SEND OUT data
+			bool join(std::string hostname, size_t port);
+			bool drop(sit_t s);
+			bool ins(size_t pos, char c);
+			bool del(size_t pos);
+
 		private:
 			std::shared_ptr<std::atomic<bool>> flag;
 			std::shared_ptr<msgpp::MessageNode> node;
@@ -97,12 +107,24 @@ namespace entangle {
 			std::shared_ptr<std::thread> daemon;
 
 			obj_t x;
+			std::shared_ptr<std::mutex> links_l;
 			std::map<sit_t, OTNodeLink> links;
 			OTNodeLink self;
+
+			// join success indicators
+			std::shared_ptr<std::atomic<bool>> is_joining;
+			bool is_joining_errno;
 
 			// differs from the paper -- we're doing the brunt of the work here instead of returning update functions
 			// this still *functions* as the transformation matrix, but returns the function *args*, not the *function*
 			upd_t t(upd_t u, upd_t up, sit_t p, sit_t pp);
+
+			// process incoming commands
+			bool proc_join(std::string arg);
+			bool proc_join_ack(std::string arg);
+			bool proc_drop(std::string arg);
+			bool proc_ins(std::string arg);
+			bool proc_del(std::string arg);
 	};
 }
 

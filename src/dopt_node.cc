@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <random>
 #include <sstream>
 #include <string>
@@ -42,11 +43,18 @@ entangle::OTNodeLink::OTNodeLink(std::string hostname, size_t port, sit_t id) {
 	this->s = id;
 }
 
+entangle::sit_t entangle::OTNodeLink::get_identifier() { return(this->s); }
+size_t entangle::OTNodeLink::get_port() { return(this->port); }
+std::string entangle::OTNodeLink::get_hostname() { return(this->hostname); }
+
 entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5, max_conn + 1));
 	this->max_conn = max_conn;
 	this->self = entangle::OTNodeLink("localhost", port, rand());
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
+	this->is_joining = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
+	this->links_l = std::shared_ptr<std::mutex> (new std::mutex ());
+	this->is_joining_errno = 0;
 }
 entangle::OTNode::~OTNode() { this->dn(); }
 
@@ -100,6 +108,41 @@ void entangle::OTNode::dn() {
 	raise(SIGINT);
 	this->daemon->join();
 }
+
+bool entangle::OTNode::join(std::string hostname, size_t port) {
+	if(*(this->is_joining) == 1) { return(false); }
+	*(this->is_joining) = 1;
+	this->is_joining_errno = 0;
+	std::stringstream buf;
+	buf << "JOIN:" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
+	int succ = this->node->push(buf.str(), hostname, port, true) == buf.str().length();
+	if(succ) {
+		// wait for confirmation from proc_join_ack
+		while(*(this->is_joining) == 1) {
+			if timeout -- raise is_joining_errno
+		}
+		return(!this->is_joining_errno);
+	}
+	return(succ);
+}
+bool entangle::OTNode::drop(entangle::sit_t s) {
+	std::stringstream buf;
+	buf << "DROP:" << s;
+	int succ = this->node->push(buf.str(), hostname, port, true) == buf.str().length();
+	if(succ) {
+		std::lock_guard<std::mutex> l(*(this->links_l));
+		this->links.erase(s);
+	}
+	return(succ);
+}
+bool entangle::OTNode::ins(size_t pos, char c) {
+	// for ... broadcast
+	return(true);
+}
+bool entangle::OTNode::del(size_t pos) {
+	return(true);
+}
+
 /*
 
 			void up();
