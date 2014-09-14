@@ -1,4 +1,5 @@
 #include <atomic>
+#include <ctime>
 #include <iomanip>
 #include <map>
 #include <memory>
@@ -6,6 +7,7 @@
 #include <random>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 #include <iostream>
@@ -118,8 +120,14 @@ bool entangle::OTNode::join(std::string hostname, size_t port) {
 	int succ = this->node->push(buf.str(), hostname, port, true) == buf.str().length();
 	if(succ) {
 		// wait for confirmation from proc_join_ack
+		int t = time(NULL);
 		while(*(this->is_joining) == 1) {
-			if timeout -- raise is_joining_errno
+			sleep(1);
+			// timeout
+			if((size_t) (time(NULL) - t) > this->node->get_timeout()) {
+				this->is_joining_errno = 1;
+				break;
+			}
 		}
 		return(!this->is_joining_errno);
 	}
@@ -128,7 +136,8 @@ bool entangle::OTNode::join(std::string hostname, size_t port) {
 bool entangle::OTNode::drop(entangle::sit_t s) {
 	std::stringstream buf;
 	buf << "DROP:" << s;
-	int succ = this->node->push(buf.str(), hostname, port, true) == buf.str().length();
+	auto info = this->links.at(s);
+	int succ = this->node->push(buf.str(), info.get_hostname(), info.get_port(), true) == buf.str().length();
 	if(succ) {
 		std::lock_guard<std::mutex> l(*(this->links_l));
 		this->links.erase(s);
