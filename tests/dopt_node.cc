@@ -14,6 +14,16 @@ TEST_CASE("entangle|dopt_node-enc") {
 	REQUIRE(n.cmp_upd_t(n.dec_upd_t("1:100:c"), { entangle::del, 100, 'c' }) == true);
 }
 
+TEST_CASE("entangle|dopt_node-insert") {
+	// auto s = entangle::OTNode(8000, 100);
+	// auto x = entangle::OTNode(8050, 1);
+	// auto y = entangle::OTNode(8051, 1);
+	// auto z = entangle::OTNode(8052, 1);
+
+	// REQUIRE_NOTHROW(n.up());
+	// REQUIRE_NOTHROW(m.dn());
+}
+
 TEST_CASE("entangle|dopt_node-daemon") {
 	auto n = entangle::OTNode(8888, 100);
 	auto m = entangle::OTNode(8889, 100);
@@ -27,6 +37,10 @@ TEST_CASE("entangle|dopt_node-daemon") {
 	REQUIRE_NOTHROW(m.up());
 	REQUIRE(m.join("localhost", 8888) == true);
 	sleep(1);
+	REQUIRE(m.size() == 1);
+	REQUIRE(n.size() == 1);
+	REQUIRE(m.join("localhost", 8888) == false);
+	REQUIRE(n.join("localhost", 8889) == false);
 	REQUIRE(m.size() == 1);
 	REQUIRE(n.size() == 1);
 	REQUIRE(m.drop("localhost", 8888) == true);
