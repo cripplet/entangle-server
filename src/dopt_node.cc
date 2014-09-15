@@ -44,18 +44,16 @@ entangle::OTNodeLink::OTNodeLink(std::string hostname, size_t port, sit_t id) {
 	this->port = port;
 	this->s = id;
 
-	this->v = std::shared_ptr<entangle::vec_t> (new entangle::vec_t ());
 	this->l = std::shared_ptr<entangle::log_t> (new entangle::log_t ());
-	this->q = std::shared_ptr<entangle::q_t> (new entangle::q_t ());
 }
 
 entangle::sit_t entangle::OTNodeLink::get_identifier() { return(this->s); }
 size_t entangle::OTNodeLink::get_port() { return(this->port); }
 std::string entangle::OTNodeLink::get_hostname() { return(this->hostname); }
 
-std::shared_ptr<entangle::vec_t> entangle::OTNodeLink::get_v() { return(this->v); }
+size_t entangle::OTNodeLink::get_count() { return(this->count); }
+void entangle::OTNode::increment() { this->count++; }
 std::shared_ptr<entangle::log_t> entangle::OTNodeLink::get_l() { return(this->l); }
-std::shared_ptr<entangle::q_t> entangle::OTNodeLink::get_q() { return(this->q); }
 
 std::map<std::string, entangle::disp_func> entangle::OTNode::dispatch_table;
 const std::string entangle::OTNode::cmd_join = "JOIN";

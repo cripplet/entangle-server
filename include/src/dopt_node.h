@@ -54,18 +54,18 @@ namespace entangle {
 			size_t get_port();
 			std::string get_hostname();
 
-			std::shared_ptr<vec_t> get_v();
+			size_t get_count();
+			void increment();
+
 			std::shared_ptr<log_t> get_l();
-			std::shared_ptr<q_t> get_q();
 
 		private:
 			/**
 			 * variable names are from the paper
 			 */
 			sit_t s;
-			std::shared_ptr<vec_t> v;
+			size_t count;
 			std::shared_ptr<log_t> l;
-			std::shared_ptr<q_t> q;
 
 			/**
 			 * connection-related stuff
@@ -130,6 +130,7 @@ namespace entangle {
 			std::shared_ptr<std::recursive_mutex> links_l;
 			std::map<sit_t, OTNodeLink> links;
 			OTNodeLink self;
+			std::shared_ptr<q_t> q;
 
 			// join success indicators
 			std::shared_ptr<std::atomic<bool>> is_joining;
