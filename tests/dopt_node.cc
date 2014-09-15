@@ -26,7 +26,13 @@ TEST_CASE("entangle|dopt_node-daemon") {
 	REQUIRE_NOTHROW(n.up());
 	REQUIRE_NOTHROW(m.up());
 	REQUIRE(m.join("localhost", 8888) == true);
+	sleep(1);
+	REQUIRE(m.size() == 1);
+	REQUIRE(n.size() == 1);
 	REQUIRE(m.drop("localhost", 8888) == true);
+	sleep(1);
+	REQUIRE(m.size() == 0);
+	REQUIRE(n.size() == 0);
 	REQUIRE_NOTHROW(m.dn());
 	REQUIRE_NOTHROW(n.dn());
 

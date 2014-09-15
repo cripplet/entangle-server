@@ -96,15 +96,18 @@ namespace entangle {
 			std::string enc_upd_t(upd_t arg);
 			upd_t dec_upd_t(std::string arg);
 			bool cmp_upd_t(upd_t s, upd_t o);
+			// branching factor of the tree (i.e. the number of clients connected to this link
+			size_t size();
 
 			// calls which will SEND OUT data
 			bool join(std::string hostname, size_t port);
-			bool drop(sit_t s);
+			bool drop(std::string hostname, size_t port);
 			bool ins(size_t pos, char c);
 			bool del(size_t pos);
 
 			static const std::string cmd_join;
 			static const std::string cmd_join_ack;
+			static const std::string cmd_drop;
 
 		private:
 			std::shared_ptr<std::atomic<bool>> flag;
@@ -114,7 +117,7 @@ namespace entangle {
 			std::shared_ptr<std::thread> dispat;
 
 			obj_t x;
-			std::shared_ptr<std::mutex> links_l;
+			std::shared_ptr<std::recursive_mutex> links_l;
 			std::map<sit_t, OTNodeLink> links;
 			OTNodeLink self;
 

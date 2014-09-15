@@ -52,6 +52,7 @@ std::string entangle::OTNodeLink::get_hostname() { return(this->hostname); }
 std::map<std::string, entangle::disp_func> entangle::OTNode::dispatch_table;
 const std::string entangle::OTNode::cmd_join = "JOIN";
 const std::string entangle::OTNode::cmd_join_ack = "JACK";
+const std::string entangle::OTNode::cmd_drop = "DROP";
 
 entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5, max_conn + 1));
@@ -59,13 +60,14 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->self = entangle::OTNodeLink("localhost", port, rand());
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
 	this->is_joining = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
-	this->links_l = std::shared_ptr<std::mutex> (new std::mutex ());
+	this->links_l = std::shared_ptr<std::recursive_mutex> (new std::recursive_mutex ());
 	this->is_joining_errno = 0;
 
 	// set up dispatch table
 	entangle::OTNode::dispatch_table.clear();
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join] = &entangle::OTNode::proc_join;
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join_ack] = &entangle::OTNode::proc_join_ack;
+	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_drop] = &entangle::OTNode::proc_drop;
 }
 entangle::OTNode::~OTNode() { this->dn(); }
 
@@ -89,6 +91,11 @@ entangle::upd_t entangle::OTNode::dec_upd_t(std::string arg) {
 	u.pos = (size_t) std::stoll(v.at(1));
 	u.c = (uint8_t) v.at(2).at(0);
 	return(u);
+}
+
+size_t entangle::OTNode::size() {
+	std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+	return(this->links.size());
 }
 
 bool entangle::OTNode::cmp_upd_t(entangle::upd_t s, entangle::upd_t o) {
@@ -154,21 +161,35 @@ bool entangle::OTNode::join(std::string hostname, size_t port) {
 	}
 	return(succ);
 }
-bool entangle::OTNode::drop(entangle::sit_t s) {
-	std::stringstream buf;
-	buf << "DROP:" << s;
-	auto info = this->links.at(s);
-	int succ = this->node->push(buf.str(), info.get_hostname(), info.get_port(), true) == buf.str().length();
-	if(succ) {
-		std::lock_guard<std::mutex> l(*(this->links_l));
-		this->links.erase(s);
+
+bool entangle::OTNode::drop(std::string hostname, size_t port) {
+	std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+
+	auto target = this->links.end();
+	for(std::map<entangle::sit_t, entangle::OTNodeLink>::iterator it = this->links.begin(); it != this->links.end(); ++it) {
+		auto info = it->second;
+		if((info.get_hostname().compare(hostname) == 0) && (info.get_port() == port)) {
+			target = it;
+			break;
+		}
 	}
-	return(succ);
+
+	if(target == this->links.end()) {
+		return(false);
+	}
+
+	std::stringstream buf;
+	buf << "DROP:" << this->self.get_identifier();
+	this->node->push(buf.str(), hostname, port, true);
+	this->links.erase(target);
+	return(true);
 }
+
 bool entangle::OTNode::ins(size_t pos, char c) {
 	// for ... broadcast
 	return(true);
 }
+
 bool entangle::OTNode::del(size_t pos) {
 	return(true);
 }
@@ -227,13 +248,18 @@ void entangle::OTNode::proc_join(std::string arg) {
 		return;
 	}
 
-	if(this->links.count(client_id) == 0) {
-		this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
-		this->join_ack(client_id);
+	{
+		std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+		if(this->links.count(client_id) == 0) {
+			this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
+			this->join_ack(client_id);
+		}
 	}
 }
 
 bool entangle::OTNode::join_ack(entangle::sit_t s) {
+	std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+
 	std::stringstream buf;
 	buf << "JACK:" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
 
@@ -258,10 +284,33 @@ void entangle::OTNode::proc_join_ack(std::string arg) {
 		return;
 	}
 
-	if(this->links.count(client_id) == 0) {
-		this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
-		this->is_joining_errno = 0;
-		*(this->is_joining) = 0;
+	{
+		std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+		if(this->links.count(client_id) == 0) {
+			this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
+			this->is_joining_errno = 0;
+			*(this->is_joining) = 0;
+		}
+	}
+}
+
+void entangle::OTNode::proc_drop(std::string arg) {
+	std::vector<std::string> v = this->parse(arg, 1);
+	if(v.size() != 1) {
+		return;
+	}
+	entangle::sit_t client_id;
+	try {
+		client_id = (entangle::sit_t) std::stoll(v.at(0));
+	} catch(const std::invalid_argument& e) {
+		return;
+	}
+
+	{
+		std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+		if(this->links.count(client_id) == 1) {
+			this->links.erase(client_id);
+		}
 	}
 }
 /*
