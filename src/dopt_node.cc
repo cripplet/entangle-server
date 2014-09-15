@@ -52,7 +52,7 @@ size_t entangle::OTNodeLink::get_port() { return(this->port); }
 std::string entangle::OTNodeLink::get_hostname() { return(this->hostname); }
 
 size_t entangle::OTNodeLink::get_count() { return(this->count); }
-void entangle::OTNode::increment() { this->count++; }
+void entangle::OTNodeLink::increment() { this->count++; }
 std::shared_ptr<entangle::log_t> entangle::OTNodeLink::get_l() { return(this->l); }
 
 std::map<std::string, entangle::disp_func> entangle::OTNode::dispatch_table;
