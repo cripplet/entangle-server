@@ -54,15 +54,18 @@ namespace entangle {
 			size_t get_port();
 			std::string get_hostname();
 
+			std::shared_ptr<vec_t> get_v();
+			std::shared_ptr<log_t> get_l();
+			std::shared_ptr<q_t> get_q();
+
 		private:
 			/**
 			 * variable names are from the paper
 			 */
 			sit_t s;
-
-			vec_t v;
-			log_t l;
-			q_t q;
+			std::shared_ptr<vec_t> v;
+			std::shared_ptr<log_t> l;
+			std::shared_ptr<q_t> q;
 
 			/**
 			 * connection-related stuff
@@ -84,9 +87,6 @@ namespace entangle {
 
 			std::string get_context();
 
-			// void local_update();
-			// void remote_update();
-
 			/**
 			 * receive messages
 			 */
@@ -102,21 +102,31 @@ namespace entangle {
 			// calls which will SEND OUT data
 			bool join(std::string hostname, size_t port);
 			bool drop(std::string hostname, size_t port);
+
+			// equivalent of local_update
 			bool ins(size_t pos, char c);
 			bool del(size_t pos);
 
 			static const std::string cmd_join;
 			static const std::string cmd_join_ack;
 			static const std::string cmd_drop;
+			static const std::string cmd_insert;
+			static const std::string cmd_delete;
 
 		private:
 			std::shared_ptr<std::atomic<bool>> flag;
 			std::shared_ptr<msgpp::MessageNode> node;
 			size_t max_conn;
+
+			// background threads running
 			std::shared_ptr<std::thread> daemon;
 			std::shared_ptr<std::thread> dispat;
+			// std::shared_ptr<std::thread> proc_q;
 
+			// shared context -- the actual data to be edited
 			obj_t x;
+
+			// tree structure stuff
 			std::shared_ptr<std::recursive_mutex> links_l;
 			std::map<sit_t, OTNodeLink> links;
 			OTNodeLink self;
@@ -124,10 +134,6 @@ namespace entangle {
 			// join success indicators
 			std::shared_ptr<std::atomic<bool>> is_joining;
 			bool is_joining_errno;
-
-			// differs from the paper -- we're doing the brunt of the work here instead of returning update functions
-			// this still *functions* as the transformation matrix, but returns the function *args*, not the *function*
-			upd_t t(upd_t u, upd_t up, sit_t p, sit_t pp);
 
 			// dispatch all commands
 			void dispatch();
@@ -139,10 +145,23 @@ namespace entangle {
 			void proc_join(std::string arg);
 			void proc_join_ack(std::string arg);
 			void proc_drop(std::string arg);
+
+			// equivalent of remote_update
 			void proc_ins(std::string arg);
 			void proc_del(std::string arg);
 
+			// locks for the node's log and queue
+			std::shared_ptr<std::mutex> q_l;
+
+			// differs from the paper -- we're doing the brunt of the work here instead of returning update functions
+			// this still *functions* as the transformation matrix, but returns the function *args*, not the *function*
+			upd_t t(upd_t u, upd_t up, sit_t p, sit_t pp);
+
+			// the bulk of the context update logic resides here
+			// void process();
+
 			static std::map<std::string, disp_func> dispatch_table;
+
 	};
 }
 #endif
