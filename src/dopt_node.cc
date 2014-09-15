@@ -49,6 +49,9 @@ entangle::sit_t entangle::OTNodeLink::get_identifier() { return(this->s); }
 size_t entangle::OTNodeLink::get_port() { return(this->port); }
 std::string entangle::OTNodeLink::get_hostname() { return(this->hostname); }
 
+std::map<std::string, entangle::disp_func> entangle::OTNode::dispatch_table;
+const std::string entangle::OTNode::cmd_join = "JOIN";
+
 entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5, max_conn + 1));
 	this->max_conn = max_conn;
@@ -57,6 +60,11 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->is_joining = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
 	this->links_l = std::shared_ptr<std::mutex> (new std::mutex ());
 	this->is_joining_errno = 0;
+
+	// set up dispatch table
+	entangle::OTNode::dispatch_table.clear();
+	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join] = &entangle::OTNode::proc_join;
+
 }
 entangle::OTNode::~OTNode() { this->dn(); }
 
@@ -94,9 +102,6 @@ bool entangle::OTNode::cmp_upd_t(entangle::upd_t s, entangle::upd_t o) {
 }
 
 // start listening for active packets
-/**
- * expected format: C:A
- */
 void entangle::OTNode::up() {
 	if(*(this->flag) == 1) {
 		return;
@@ -106,11 +111,16 @@ void entangle::OTNode::up() {
 	this->dispat = std::shared_ptr<std::thread> (new std::thread(&entangle::OTNode::dispatch, this));
 }
 
+/**
+ * expected format: C[4]:A
+ */
 void entangle::OTNode::dispatch() {
 	while(*(this->flag) == 1) {
 		std::string msg = this->node->pull("", true);
 		if(msg.compare("") != 0) {
-			std::cout << msg << std::endl;
+			if(entangle::OTNode::dispatch_table.count(msg.substr(0, 4)) != 0) {
+//				(this->*entangle::OTNode::dispatch_table[msg.substr(0, 4)])(msg.substr(4));
+			}
 		}
 	}
 }
@@ -166,6 +176,12 @@ bool entangle::OTNode::del(size_t pos) {
 	return(true);
 }
 
+/**
+ * dispatch stuff
+ */
+bool proc_join(std::string arg) {
+	return(false);
+}
 /*
 
 			void up();

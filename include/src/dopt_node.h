@@ -74,7 +74,10 @@ namespace entangle {
 	/**
 	 * the node itself
 	 */
+	class OTNode;
+	typedef bool (OTNode::*disp_func)(std::string);
 	class OTNode {
+
 		public:
 			OTNode(size_t port, size_t max_conn);
 			~OTNode();
@@ -99,6 +102,8 @@ namespace entangle {
 			bool drop(sit_t s);
 			bool ins(size_t pos, char c);
 			bool del(size_t pos);
+
+			static const std::string cmd_join;
 
 		private:
 			std::shared_ptr<std::atomic<bool>> flag;
@@ -129,7 +134,8 @@ namespace entangle {
 			bool proc_drop(std::string arg);
 			bool proc_ins(std::string arg);
 			bool proc_del(std::string arg);
+
+			static std::map<std::string, disp_func> dispatch_table;
 	};
 }
-
 #endif
