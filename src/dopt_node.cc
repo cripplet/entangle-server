@@ -108,6 +108,7 @@ void entangle::OTNode::up() {
 	*(this->flag) = 1;
 	this->daemon = std::shared_ptr<std::thread> (new std::thread(&msgpp::MessageNode::up, &*(this->node)));
 	this->dispat = std::shared_ptr<std::thread> (new std::thread(&entangle::OTNode::dispatch, this));
+	while(this->node->get_status() == 0);
 }
 
 /**
@@ -118,7 +119,7 @@ void entangle::OTNode::dispatch() {
 		std::string msg = this->node->pull("", true);
 		if(msg.compare("") != 0) {
 			if(entangle::OTNode::dispatch_table.count(msg.substr(0, 4)) != 0) {
-				(this->*entangle::OTNode::dispatch_table[msg.substr(0, 4)])(msg.substr(4));
+				(this->*entangle::OTNode::dispatch_table[msg.substr(0, 4)])(msg.substr(5));
 			}
 		}
 	}
@@ -129,7 +130,7 @@ void entangle::OTNode::dn() {
 		return;
 	}
 	*(this->flag) = 0;
-	raise(SIGINT);
+	this->node->dn();
 	this->daemon->join();
 	this->dispat->join();
 }
@@ -140,17 +141,19 @@ bool entangle::OTNode::join(std::string hostname, size_t port) {
 	this->is_joining_errno = 0;
 	std::stringstream buf;
 	buf << "JOIN:" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
-	int succ = this->node->push(buf.str(), hostname, port, true) == buf.str().length();
+	int succ = (this->node->push(buf.str(), hostname, port, true) == buf.str().length());
+	*(this->is_joining) = succ;
 	if(succ) {
 		// wait for confirmation from proc_join_ack
 		int t = time(NULL);
 		while(*(this->is_joining) == 1) {
-			sleep(1);
 			// timeout
 			if((size_t) (time(NULL) - t) > this->node->get_timeout()) {
+				*(this->is_joining) = 0;
 				this->is_joining_errno = 1;
 				break;
 			}
+			sleep(1);
 		}
 		return(!this->is_joining_errno);
 	}
@@ -178,7 +181,10 @@ bool entangle::OTNode::del(size_t pos) {
 /**
  * dispatch stuff
  */
-void entangle::OTNode::proc_join(std::string arg) {}
+
+void entangle::OTNode::proc_join(std::string arg) {
+	std::cout << arg << std::endl;
+}
 /*
 
 			void up();

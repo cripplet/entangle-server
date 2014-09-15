@@ -24,7 +24,9 @@ TEST_CASE("entangle|dopt_node-daemon") {
 	REQUIRE_NOTHROW(n.dn());
 
 	REQUIRE_NOTHROW(n.up());
+	REQUIRE_NOTHROW(m.up());
 	REQUIRE(m.join("localhost", 8888) == true);
+	REQUIRE_NOTHROW(m.dn());
 	REQUIRE_NOTHROW(n.dn());
 
 	// auto-call OTNode::dn on stack unwind
