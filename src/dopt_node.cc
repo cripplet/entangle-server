@@ -51,6 +51,7 @@ std::string entangle::OTNodeLink::get_hostname() { return(this->hostname); }
 
 std::map<std::string, entangle::disp_func> entangle::OTNode::dispatch_table;
 const std::string entangle::OTNode::cmd_join = "JOIN";
+const std::string entangle::OTNode::cmd_join_ack = "JACK";
 
 entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5, max_conn + 1));
@@ -64,6 +65,7 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	// set up dispatch table
 	entangle::OTNode::dispatch_table.clear();
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join] = &entangle::OTNode::proc_join;
+	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join_ack] = &entangle::OTNode::proc_join_ack;
 }
 entangle::OTNode::~OTNode() { this->dn(); }
 
@@ -78,15 +80,8 @@ std::string entangle::OTNode::enc_upd_t(entangle::upd_t arg) {
  */
 entangle::upd_t entangle::OTNode::dec_upd_t(std::string arg) {
 	entangle::upd_t u = { 0, 0, '\0' };
-	// cf. http://bit.ly/1o7a4Rq
-	size_t curr;
-	size_t next = -1;
-	std::vector<std::string> v;
-	do {
-		curr = next + 1;
-		next = arg.find_first_of(":", curr);
-		v.push_back(arg.substr(curr, next - curr));
-	} while (next != std::string::npos);
+	std::vector<std::string> v = this->parse(arg);
+
 	if(v.size() != 3) {
 		return(u);
 	}
@@ -182,8 +177,92 @@ bool entangle::OTNode::del(size_t pos) {
  * dispatch stuff
  */
 
+std::vector<std::string> entangle::OTNode::parse(std::string arg, size_t n_args) {
+	std::vector<std::string> v, u;
+
+	// cf. http://bit.ly/1o7a4Rq
+	size_t curr;
+	size_t next = -1;
+
+	do {
+		curr = next + 1;
+		next = arg.find_first_of(":", curr);
+		v.push_back(arg.substr(curr, next - curr));
+	} while (next != std::string::npos);
+
+	// fold the last several args into the required number of elements
+	if(n_args == 0) {
+		n_args = v.size();
+	}
+
+	for(size_t i = 0; i < n_args; ++i) {
+		u.push_back(v.at(i));
+	}
+	if(v.size() > n_args) {
+		for(size_t i = n_args; i < v.size(); ++i) {
+			u.back().append(":");
+			u.back().append(v.at(i));
+		}
+	}
+
+	return(u);
+}
+
+/**
+ * expected format: SIT_ID:H:P
+ */
 void entangle::OTNode::proc_join(std::string arg) {
-	std::cout << arg << std::endl;
+	std::vector<std::string> v = this->parse(arg, 3);
+	if(v.size() != 3) {
+		return;
+	}
+	entangle::sit_t client_id;
+	size_t client_port;
+	std::string client_hostname;
+	try {
+		client_id = (entangle::sit_t) std::stoll(v.at(0));
+		client_port = (size_t) std::stoll(v.at(1));
+		client_hostname = v.at(2);
+	} catch(const std::invalid_argument& e) {
+		return;
+	}
+
+	if(this->links.count(client_id) == 0) {
+		this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
+		this->join_ack(client_id);
+	}
+}
+
+bool entangle::OTNode::join_ack(entangle::sit_t s) {
+	std::stringstream buf;
+	buf << "JACK:" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
+
+	auto info = this->links.at(s);
+	return(this->node->push(buf.str(), info.get_hostname(), info.get_port(), true) == buf.str().length());
+}
+
+// allow the original JOIN client to add the server to the list of links
+void entangle::OTNode::proc_join_ack(std::string arg) {
+	std::vector<std::string> v = this->parse(arg, 3);
+	if(v.size() != 3) {
+		return;
+	}
+	entangle::sit_t client_id;
+	size_t client_port;
+	std::string client_hostname;
+	try {
+		client_id = (entangle::sit_t) std::stoll(v.at(0));
+		client_port = (size_t) std::stoll(v.at(1));
+		client_hostname = v.at(2);
+	} catch(const std::invalid_argument& e) {
+		return;
+	}
+
+	if(this->links.count(client_id) == 0) {
+		this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
+		this->is_joining_errno = 0;
+		*(this->is_joining) = 0;
+	}
 }
 /*
 

@@ -104,6 +104,7 @@ namespace entangle {
 			bool del(size_t pos);
 
 			static const std::string cmd_join;
+			static const std::string cmd_join_ack;
 
 		private:
 			std::shared_ptr<std::atomic<bool>> flag;
@@ -128,7 +129,10 @@ namespace entangle {
 			// dispatch all commands
 			void dispatch();
 
+			std::vector<std::string> parse(std::string arg, size_t n_args = 0);
+
 			// process incoming commands
+			bool join_ack(sit_t s);
 			void proc_join(std::string arg);
 			void proc_join_ack(std::string arg);
 			void proc_drop(std::string arg);
