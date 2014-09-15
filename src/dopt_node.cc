@@ -94,12 +94,25 @@ bool entangle::OTNode::cmp_upd_t(entangle::upd_t s, entangle::upd_t o) {
 }
 
 // start listening for active packets
+/**
+ * expected format: C:A
+ */
 void entangle::OTNode::up() {
 	if(*(this->flag) == 1) {
 		return;
 	}
 	*(this->flag) = 1;
 	this->daemon = std::shared_ptr<std::thread> (new std::thread(&msgpp::MessageNode::up, &*(this->node)));
+	this->dispat = std::shared_ptr<std::thread> (new std::thread(&entangle::OTNode::dispatch, this));
+}
+
+void entangle::OTNode::dispatch() {
+	while(*(this->flag) == 1) {
+		std::string msg = this->node->pull("", true);
+		if(msg.compare("") != 0) {
+			std::cout << msg << std::endl;
+		}
+	}
 }
 
 void entangle::OTNode::dn() {
@@ -109,6 +122,7 @@ void entangle::OTNode::dn() {
 	*(this->flag) = 0;
 	raise(SIGINT);
 	this->daemon->join();
+	this->dispat->join();
 }
 
 bool entangle::OTNode::join(std::string hostname, size_t port) {

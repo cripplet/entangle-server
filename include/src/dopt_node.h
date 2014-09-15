@@ -105,6 +105,7 @@ namespace entangle {
 			std::shared_ptr<msgpp::MessageNode> node;
 			size_t max_conn;
 			std::shared_ptr<std::thread> daemon;
+			std::shared_ptr<std::thread> dispat;
 
 			obj_t x;
 			std::shared_ptr<std::mutex> links_l;
@@ -118,6 +119,9 @@ namespace entangle {
 			// differs from the paper -- we're doing the brunt of the work here instead of returning update functions
 			// this still *functions* as the transformation matrix, but returns the function *args*, not the *function*
 			upd_t t(upd_t u, upd_t up, sit_t p, sit_t pp);
+
+			// dispatch all commands
+			void dispatch();
 
 			// process incoming commands
 			bool proc_join(std::string arg);

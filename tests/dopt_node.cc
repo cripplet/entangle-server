@@ -16,8 +16,15 @@ TEST_CASE("entangle|dopt_node-enc") {
 
 TEST_CASE("entangle|dopt_node-daemon") {
 	auto n = entangle::OTNode(8888, 100);
+	auto m = entangle::OTNode(8889, 100);
+
+	REQUIRE(m.join("localhost", 8888) == false);
+
 	REQUIRE_NOTHROW(n.up());
-	sleep(1);
+	REQUIRE_NOTHROW(n.dn());
+
+	REQUIRE_NOTHROW(n.up());
+	REQUIRE(m.join("localhost", 8888) == true);
 	REQUIRE_NOTHROW(n.dn());
 
 	// auto-call OTNode::dn on stack unwind
