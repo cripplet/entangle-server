@@ -64,7 +64,6 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	// set up dispatch table
 	entangle::OTNode::dispatch_table.clear();
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join] = &entangle::OTNode::proc_join;
-
 }
 entangle::OTNode::~OTNode() { this->dn(); }
 
@@ -119,7 +118,7 @@ void entangle::OTNode::dispatch() {
 		std::string msg = this->node->pull("", true);
 		if(msg.compare("") != 0) {
 			if(entangle::OTNode::dispatch_table.count(msg.substr(0, 4)) != 0) {
-//				(this->*entangle::OTNode::dispatch_table[msg.substr(0, 4)])(msg.substr(4));
+				(this->*entangle::OTNode::dispatch_table[msg.substr(0, 4)])(msg.substr(4));
 			}
 		}
 	}
@@ -179,9 +178,7 @@ bool entangle::OTNode::del(size_t pos) {
 /**
  * dispatch stuff
  */
-bool proc_join(std::string arg) {
-	return(false);
-}
+void entangle::OTNode::proc_join(std::string arg) {}
 /*
 
 			void up();

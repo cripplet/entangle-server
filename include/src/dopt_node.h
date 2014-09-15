@@ -75,7 +75,7 @@ namespace entangle {
 	 * the node itself
 	 */
 	class OTNode;
-	typedef bool (OTNode::*disp_func)(std::string);
+	typedef void (OTNode::*disp_func)(std::string);
 	class OTNode {
 
 		public:
@@ -129,11 +129,11 @@ namespace entangle {
 			void dispatch();
 
 			// process incoming commands
-			bool proc_join(std::string arg);
-			bool proc_join_ack(std::string arg);
-			bool proc_drop(std::string arg);
-			bool proc_ins(std::string arg);
-			bool proc_del(std::string arg);
+			void proc_join(std::string arg);
+			void proc_join_ack(std::string arg);
+			void proc_drop(std::string arg);
+			void proc_ins(std::string arg);
+			void proc_del(std::string arg);
 
 			static std::map<std::string, disp_func> dispatch_table;
 	};
