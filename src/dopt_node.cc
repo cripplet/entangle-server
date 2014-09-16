@@ -161,7 +161,7 @@ bool entangle::OTNode::join(std::string hostname, size_t port) {
 	*(this->is_joining) = 1;
 	this->is_joining_errno = 0;
 	std::stringstream buf;
-	buf << "JOIN:" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
+	buf << entangle::OTNode::cmd_join << ":" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
 	int succ = (this->node->push(buf.str(), hostname, port, true) == buf.str().length());
 	*(this->is_joining) = succ;
 	if(succ) {
@@ -198,7 +198,7 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 	}
 
 	std::stringstream buf;
-	buf << "DROP:" << this->self.get_identifier();
+	buf << entangle::OTNode::cmd_drop << ":" << this->self.get_identifier();
 	this->node->push(buf.str(), hostname, port, true);
 	this->links.erase(target);
 	return(true);
@@ -244,12 +244,11 @@ void entangle::OTNode::process() {
 			if(succ) {
 				auto V = std::map<entangle::sit_t, size_t> ();
 				V[this->self.get_identifier()] = this->self.get_count();
-				V[remote->s] = this->links[remote->s].get_count();
+				V[s] = this->links[s].get_count();
 				auto v = remote->v;
-
 				std::shared_ptr<entangle::log_t> l;
 				size_t offset;
-				if(remote->s != this->self.get_identifier()) {
+				if(s != this->self.get_identifier()) {
 					l = this->links[remote->s].get_l();
 					this->links[remote->s].set_offset();
 					offset = this->links[remote->s].get_offset();
@@ -259,20 +258,54 @@ void entangle::OTNode::process() {
 					offset = this->self.get_offset();
 				}
 
+				// modify the update appropriately
 				l->insert(l->begin(), remote->u);
-				for(size_t k = (offset + V[s] + v[S] + 1); k < (offset + V[s] + V[s] + 1); ++k) {
+				for(size_t k = (V[s] + v[S] + 1); k < (V[s] + V[s] + 1); ++k) {
 					auto U = l->at(k - offset);
 					auto u = remote->u;
 					l->at(k - offset) = t(U, u, S, s);
 					u = t(u, U, s, S);
-					V[s]++;
-					// this->apply(u);
+					if(s == this->self.get_identifier()) {
+						this->self.set_count();
+					} else {
+						this->links[s].set_count();
+					}
+					remote->u = u;
 				}
-				// more processing PUSH / PULL instead of COPY everything from MAP -- order is guaranteed in iterator
+
+				// broadcast to the rest of the tree, and update
+				if(remote->u.type != entangle::nop) {
+					std::stringstream buf;
+					if(remote->u.type == entangle::ins) {
+						buf << entangle::OTNode::cmd_insert << ":" << remote->u.type << ":" << remote->u.pos << ":" << remote->u.c;
+					} else {
+						buf << entangle::OTNode::cmd_delete << ":" << remote->u.type << ":" << remote->u.pos << ":" << remote->u.c;
+					}
+					for(auto it = this->links.begin(); it != this->links.end(); ++it) {
+						if(it->first != s) {
+							auto info = it->second;
+							this->node->push(buf.str(), info.get_hostname(), info.get_port(), true);
+						}
+					}
+					// actually apply the update
+					this->apply(remote->u);
+				}
 			}
 		}
+		this->q.clear();
 	}
 }
+
+// we only expect u to be an INSERT or DELETE operation
+void entangle::OTNode::apply(entangle::upd_t u) {
+	if(u.type == entangle::ins) {
+		this->x.insert(u.pos, 1, u.c);
+	} else {
+		this->x.erase(u.pos, 1);
+	}
+}
+
+std::string entangle::OTNode::get_context() { return(this->x); }
 
 // cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
 entangle::upd_t entangle::OTNode::t(entangle::upd_t u, entangle::upd_t up, entangle::sit_t p, entangle::sit_t pp) {
@@ -407,7 +440,7 @@ bool entangle::OTNode::join_ack(entangle::sit_t s) {
 	std::lock_guard<std::recursive_mutex> l(*(this->links_l));
 
 	std::stringstream buf;
-	buf << "JACK:" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
+	buf << entangle::OTNode::cmd_join_ack << ":" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
 
 	auto info = this->links.at(s);
 	return(this->node->push(buf.str(), info.get_hostname(), info.get_port(), true) == buf.str().length());
