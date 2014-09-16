@@ -26,26 +26,55 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	sleep(1);
 	REQUIRE(s.size() == 1);
 
+	/**
+	 * single node-server topology
+	 */
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
-	REQUIRE(s.get_context().compare("1") == 0);
-	REQUIRE(x.get_context().compare("1") == 0);
+	CHECK(s.get_context().compare("1") == 0);
+	CHECK(x.get_context().compare("1") == 0);
 
 	REQUIRE(x.del(0) == true);
 	sleep(1);
-	REQUIRE(s.get_context().compare("") == 0);
-	REQUIRE(x.get_context().compare("") == 0);
+	CHECK(s.get_context().compare("") == 0);
+	CHECK(x.get_context().compare("") == 0);
 
 	REQUIRE(y.join("localhost", 8000) == true);
 	sleep(1);
 	REQUIRE(s.size() == 2);
-/*
+
+	/**
+	 * multi node-server topology
+	 */
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
-	REQUIRE(s.get_context().compare("1") == 0);
-	REQUIRE(x.get_context().compare("1") == 0);
-	REQUIRE(y.get_context().compare("1") == 0);
-*/
+	CHECK(s.get_context().compare("1") == 0);
+	CHECK(x.get_context().compare("1") == 0);
+	CHECK(y.get_context().compare("1") == 0);
+
+	REQUIRE(x.del(0) == true);
+	sleep(1);
+	CHECK(s.get_context().compare("") == 0);
+	CHECK(x.get_context().compare("") == 0);
+	CHECK(y.get_context().compare("") == 0);
+
+	/**
+	 * concurrent update checking
+	 */
+	REQUIRE(x.ins(0, '1') == true);
+	REQUIRE(y.ins(0, '1') == true);
+	sleep(1);
+	CHECK(s.get_context().compare("1") == 0);
+	CHECK(x.get_context().compare("1") == 0);
+	CHECK(y.get_context().compare("1") == 0);
+
+	REQUIRE(x.del(0) == true);
+	REQUIRE(y.del(0) == true);
+	sleep(1);
+	CHECK(s.get_context().compare("") == 0);
+	CHECK(x.get_context().compare("") == 0);
+	CHECK(y.get_context().compare("") == 0);
+
 	REQUIRE(x.drop("localhost", 8000) == true);
 	REQUIRE(y.drop("localhost", 8000) == true);
 	sleep(1);
