@@ -215,6 +215,17 @@ bool entangle::OTNode::del(size_t pos) {
 void entangle::OTNode::process() {
 	while(*(this->flag) == 1) {
 		for(auto candidate = this->q.begin(); candidate != q.end(); ++candidate) {
+			entangle::OTNodeLink info;
+			bool succ = (this->self.get_identifier() == candidate->s);
+			if(succ) {
+				info = this->self;
+			} else {
+				info = this->links[candidate->s];
+				// check if v <= V
+				succ = ((candidate->v.at(0) <= this->self.get_count()) && (candidate->v.at(1) <= info.get_count()));
+			}
+			if(succ) {
+			}
 		}
 	}
 }
