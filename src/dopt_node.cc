@@ -77,6 +77,10 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->links_l = std::shared_ptr<std::recursive_mutex> (new std::recursive_mutex ());
 	this->is_joining_errno = 0;
 
+	this->links = std::map<entangle::sit_t, entangle::OTNodeLink> ();
+	this->x = entangle::obj_t ();
+	this->q = entangle::q_t ();
+
 	// set up dispatch table
 	entangle::OTNode::dispatch_table.clear();
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join] = &entangle::OTNode::proc_join;
@@ -245,8 +249,10 @@ void entangle::OTNode::process() {
 			}
 			if(succ) {
 				auto V = std::map<entangle::sit_t, size_t> ();
-				V[this->self.get_identifier()] = this->self.get_count();
-				V[s] = this->links[s].get_count();
+				V[S] = this->self.get_count();
+				if(S != s) {
+					V[s] = this->links[s].get_count();
+				}
 				auto v = remote->v;
 				std::shared_ptr<entangle::log_t> l;
 				size_t offset;

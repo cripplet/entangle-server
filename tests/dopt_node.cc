@@ -14,53 +14,45 @@ TEST_CASE("entangle|dopt_node-enc") {
 	REQUIRE(n.cmp_upd_t(n.dec_upd_t("1:100:c"), { entangle::del, 100, 'c' }) == true);
 }
 
-TEST_CASE("entangle|dopt_node-insert") {
+TEST_CASE("entangle|dopt_node-ins-del") {
 	auto s = entangle::OTNode(8000, 100);
 	auto x = entangle::OTNode(8050, 1);
 	auto y = entangle::OTNode(8051, 1);
-	auto z = entangle::OTNode(8052, 1);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
 	REQUIRE_NOTHROW(y.up());
-	REQUIRE_NOTHROW(z.up());
 	REQUIRE(x.join("localhost", 8000) == true);
-	REQUIRE(y.join("localhost", 8000) == true);
-	REQUIRE(z.join("localhost", 8000) == true);
-	sleep(3);
-	REQUIRE(s.size() == 3);
+	sleep(1);
+	REQUIRE(s.size() == 1);
 
 	REQUIRE(x.ins(0, '1') == true);
-	sleep(3);
+	sleep(1);
 	REQUIRE(s.get_context().compare("1") == 0);
 	REQUIRE(x.get_context().compare("1") == 0);
-	REQUIRE(y.get_context().compare("1") == 0);
-	REQUIRE(z.get_context().compare("1") == 0);
 
 	REQUIRE(x.del(0) == true);
-	sleep(3);
+	sleep(1);
 	REQUIRE(s.get_context().compare("") == 0);
 	REQUIRE(x.get_context().compare("") == 0);
-	REQUIRE(y.get_context().compare("") == 0);
-	REQUIRE(z.get_context().compare("") == 0);
 
+	REQUIRE(y.join("localhost", 8000) == true);
+	sleep(1);
+	REQUIRE(s.size() == 2);
+/*
 	REQUIRE(x.ins(0, '1') == true);
-	REQUIRE(y.ins(0, '1') == true);
-	sleep(3);
+	sleep(1);
 	REQUIRE(s.get_context().compare("1") == 0);
 	REQUIRE(x.get_context().compare("1") == 0);
 	REQUIRE(y.get_context().compare("1") == 0);
-	REQUIRE(z.get_context().compare("1") == 0);
-
+*/
 	REQUIRE(x.drop("localhost", 8000) == true);
 	REQUIRE(y.drop("localhost", 8000) == true);
-	REQUIRE(z.drop("localhost", 8000) == true);
-	sleep(3);
+	sleep(1);
 	REQUIRE(s.size() == 0);
 	REQUIRE_NOTHROW(s.dn());
 	REQUIRE_NOTHROW(x.dn());
 	REQUIRE_NOTHROW(y.dn());
-	REQUIRE_NOTHROW(z.dn());
 }
 
 TEST_CASE("entangle|dopt_node-daemon") {
