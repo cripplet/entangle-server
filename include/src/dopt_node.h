@@ -27,6 +27,7 @@ namespace entangle {
 	typedef uint8_t func_type;
 	const func_type ins = 0;
 	const func_type del = 1;
+	const func_type nop = 2;
 	typedef struct {
 		func_type type;
 		size_t pos;

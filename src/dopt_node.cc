@@ -228,12 +228,7 @@ void entangle::OTNode::process() {
 	while(*(this->flag) == 1) {
 		std::lock_guard<std::mutex> l(*(this->q_l));
 		for(auto remote = this->q.begin(); remote != q.end(); ++remote) {
-			// if(&(*remote) == NULL) {
-			//	break;
-			// }
 			entangle::OTNodeLink info;
-
-//			std::cout << "remote: " << &(*remote) << std::endl;
 
 			bool succ = (this->self.get_identifier() == remote->s);
 			size_t S = this->self.get_identifier();
@@ -279,7 +274,69 @@ void entangle::OTNode::process() {
 	}
 }
 
-entangle::upd_t entangle::OTNode::t(upd_t u, upd_t up, sit_t p, sit_t pp) {
+// cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
+entangle::upd_t entangle::OTNode::t(entangle::upd_t u, entangle::upd_t up, entangle::sit_t p, entangle::sit_t pp) {
+	entangle::upd_t nop = { entangle::nop, 0, '\0' };
+	if(u.type == entangle::nop) {
+		return(nop);
+	}
+	if(up.type == entangle::nop) {
+		return(u);
+	}
+	if(u.type == entangle::ins) {
+		// INS, INS
+		if(up.type == entangle::ins) {
+			if(u.pos < up.pos) {
+				return(u);
+			}
+			if(u.pos > up.pos) {
+				entangle::upd_t r = { entangle::ins, u.pos + 1, u.c };
+				return(r);
+			}
+			if((u.pos == up.pos) && (u.c == up.c)) {
+				return(nop);
+			}
+			if((u.pos == up.pos) && (p < pp)) {
+				return(u);
+			}
+			if((u.pos == up.pos) && (p > pp)) {
+				entangle::upd_t r = { entangle::ins, u.pos + 1, u.c };
+				return(r);
+			}
+		// INS, DEL
+		} else {
+			if(u.pos <= up.pos) {
+				return(u);
+			}
+			if(u.pos > up.pos) {
+				entangle::upd_t r = { entangle::ins, u.pos - 1, u.c };
+				return(r);
+			}
+		}
+	} else {
+		// DEL, INS
+		if(up.type == entangle::ins) {
+			if(u.pos < up.pos) {
+				return(u);
+			}
+			if(u.pos >= up.pos) {
+				entangle::upd_t r = { entangle::del, u.pos + 1, '\0' };
+				return(r);
+			}
+		// DEL, DEL
+		} else {
+			if(u.pos < up.pos) {
+				return(u);
+			}
+			if(u.pos > up.pos) {
+				entangle::upd_t r = { entangle::del, u.pos - 1, '\0' };
+				return(r);
+			}
+			if(u.pos < up.pos) {
+				return(nop);
+			}
+		}
+	}
 	return(u);
 }
 
