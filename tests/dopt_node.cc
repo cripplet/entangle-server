@@ -17,28 +17,38 @@ TEST_CASE("entangle|dopt_node-enc") {
 TEST_CASE("entangle|dopt_node-insert") {
 	auto s = entangle::OTNode(8000, 100);
 	auto x = entangle::OTNode(8050, 1);
-	// auto y = entangle::OTNode(8051, 1);
-	// auto z = entangle::OTNode(8052, 1);
+	auto y = entangle::OTNode(8051, 1);
+	auto z = entangle::OTNode(8052, 1);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
+	REQUIRE_NOTHROW(y.up());
+	REQUIRE_NOTHROW(z.up());
 	REQUIRE(x.join("localhost", 8000) == true);
+	REQUIRE(y.join("localhost", 8000) == true);
+	REQUIRE(z.join("localhost", 8000) == true);
 
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 
 	REQUIRE(s.get_context().compare("1") == 0);
 	REQUIRE(x.get_context().compare("1") == 0);
+	REQUIRE(y.get_context().compare("1") == 0);
+	REQUIRE(z.get_context().compare("1") == 0);
 
 	REQUIRE(x.del(0) == true);
 	sleep(1);
 
 	REQUIRE(s.get_context().compare("") == 0);
 	REQUIRE(x.get_context().compare("") == 0);
+	REQUIRE(y.get_context().compare("") == 0);
+	REQUIRE(z.get_context().compare("") == 0);
 
 	REQUIRE(x.drop("localhost", 8000) == true);
 	REQUIRE_NOTHROW(s.dn());
 	REQUIRE_NOTHROW(x.dn());
+	REQUIRE_NOTHROW(y.dn());
+	REQUIRE_NOTHROW(z.dn());
 }
 
 TEST_CASE("entangle|dopt_node-daemon") {
