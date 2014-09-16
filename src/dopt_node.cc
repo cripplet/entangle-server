@@ -289,12 +289,12 @@ void entangle::OTNode::process() {
 					} else {
 						buf << entangle::OTNode::cmd_delete;
 					}
-
-					buf << ":" << this->self.get_identifier() << ":" << this->self.get_count() << ":" << this->links[s].get_count() << ":" << (size_t) remote->u.type << ":" << remote->u.pos << ":" << remote->u.c;
+					buf << ":" << this->self.get_identifier() << ":" << this->self.get_count();
 
 					for(auto it = this->links.begin(); it != this->links.end(); ++it) {
 						if(it->first != s) {
 							auto info = it->second;
+							buf << ":" << info.get_count() << ":" << (size_t) remote->u.type << ":" << remote->u.pos << ":" << remote->u.c;
 							this->node->push(buf.str(), info.get_hostname(), info.get_port(), true);
 						}
 					}
