@@ -51,8 +51,14 @@ entangle::sit_t entangle::OTNodeLink::get_identifier() { return(this->s); }
 size_t entangle::OTNodeLink::get_port() { return(this->port); }
 std::string entangle::OTNodeLink::get_hostname() { return(this->hostname); }
 
+// vS
 size_t entangle::OTNodeLink::get_count() { return(this->count); }
-void entangle::OTNodeLink::increment() { this->count++; }
+void entangle::OTNodeLink::set_count() { this->count++; }
+
+// log offset
+size_t entangle::OTNodeLink::get_offset() { return(this->offset); }
+void entangle::OTNodeLink::set_offset() { this->offset++; }
+
 std::shared_ptr<entangle::log_t> entangle::OTNodeLink::get_l() { return(this->l); }
 
 std::map<std::string, entangle::disp_func> entangle::OTNode::dispatch_table;
@@ -201,33 +207,80 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 bool entangle::OTNode::ins(size_t pos, char c) {
 	std::map<entangle::sit_t, size_t> v;
 	v[this->self.get_identifier()] = this->self.get_count();
-	this->q.push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::ins, pos, c } });
+	{
+		std::lock_guard<std::mutex> l(*(this->q_l));
+		this->q.push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::ins, pos, c } });
+	}
 	return(true);
 }
 
 bool entangle::OTNode::del(size_t pos) {
 	std::map<entangle::sit_t, size_t> v;
 	v[this->self.get_identifier()] = this->self.get_count();
-	this->q.push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::del, pos, '\0' } });
+	{
+		std::lock_guard<std::mutex> l(*(this->q_l));
+		this->q.push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::del, pos, '\0' } });
+	}
 	return(true);
 }
 
 void entangle::OTNode::process() {
 	while(*(this->flag) == 1) {
-		for(auto candidate = this->q.begin(); candidate != q.end(); ++candidate) {
+		std::lock_guard<std::mutex> l(*(this->q_l));
+		for(auto remote = this->q.begin(); remote != q.end(); ++remote) {
+			// if(&(*remote) == NULL) {
+			//	break;
+			// }
 			entangle::OTNodeLink info;
-			bool succ = (this->self.get_identifier() == candidate->s);
+
+//			std::cout << "remote: " << &(*remote) << std::endl;
+
+			bool succ = (this->self.get_identifier() == remote->s);
+			size_t S = this->self.get_identifier();
+			size_t s = remote->s;
+
 			if(succ) {
 				info = this->self;
 			} else {
-				info = this->links[candidate->s];
+				info = this->links[remote->s];
 				// check if v <= V
-				succ = ((candidate->v.at(0) <= this->self.get_count()) && (candidate->v.at(1) <= info.get_count()));
+				succ = ((remote->v.at(0) <= this->self.get_count()) && (remote->v.at(1) <= info.get_count()));
 			}
 			if(succ) {
+				auto V = std::map<entangle::sit_t, size_t> ();
+				V[this->self.get_identifier()] = this->self.get_count();
+				V[remote->s] = this->links[remote->s].get_count();
+				auto v = remote->v;
+
+				std::shared_ptr<entangle::log_t> l;
+				size_t offset;
+				if(remote->s != this->self.get_identifier()) {
+					l = this->links[remote->s].get_l();
+					this->links[remote->s].set_offset();
+					offset = this->links[remote->s].get_offset();
+				} else {
+					l = this->self.get_l();
+					this->self.set_offset();
+					offset = this->self.get_offset();
+				}
+
+				l->insert(l->begin(), remote->u);
+				for(size_t k = (offset + V[s] + v[S] + 1); k < (offset + V[s] + V[s] + 1); ++k) {
+					auto U = l->at(k - offset);
+					auto u = remote->u;
+					l->at(k - offset) = t(U, u, S, s);
+					u = t(u, U, s, S);
+					V[s]++;
+					// this->apply(u);
+				}
+				// more processing PUSH / PULL instead of COPY everything from MAP -- order is guaranteed in iterator
 			}
 		}
 	}
+}
+
+entangle::upd_t entangle::OTNode::t(upd_t u, upd_t up, sit_t p, sit_t pp) {
+	return(u);
 }
 
 /**

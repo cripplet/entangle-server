@@ -33,7 +33,7 @@ namespace entangle {
 		char c;
 	} upd_t;
 	typedef std::map<sit_t, size_t> vec_t;
-	typedef std::map<size_t, upd_t> log_t;
+	typedef std::vector<upd_t> log_t;
 	// queue element
 	typedef struct {
 		sit_t s;
@@ -55,7 +55,10 @@ namespace entangle {
 			std::string get_hostname();
 
 			size_t get_count();
-			void increment();
+			void set_count();
+
+			size_t get_offset();
+			void set_offset();
 
 			std::shared_ptr<log_t> get_l();
 
@@ -65,6 +68,7 @@ namespace entangle {
 			 */
 			sit_t s;
 			size_t count;
+			size_t offset;
 			std::shared_ptr<log_t> l;
 
 			/**
