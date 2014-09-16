@@ -26,10 +26,13 @@ TEST_CASE("entangle|dopt_node-insert") {
 
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
+
 	REQUIRE(s.get_context().compare("1") == 0);
 	REQUIRE(x.get_context().compare("1") == 0);
+
 	REQUIRE(x.del(0) == true);
 	sleep(1);
+
 	REQUIRE(s.get_context().compare("") == 0);
 	REQUIRE(x.get_context().compare("") == 0);
 

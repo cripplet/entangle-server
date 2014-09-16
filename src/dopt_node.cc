@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include <iostream>
-
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
 
@@ -44,6 +42,8 @@ entangle::OTNodeLink::OTNodeLink(std::string hostname, size_t port, sit_t id) {
 	this->port = port;
 	this->s = id;
 
+	this->count = 0;
+	this->offset = 0;
 	this->l = std::shared_ptr<entangle::log_t> (new entangle::log_t ());
 }
 
@@ -82,6 +82,8 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join] = &entangle::OTNode::proc_join;
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_join_ack] = &entangle::OTNode::proc_join_ack;
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_drop] = &entangle::OTNode::proc_drop;
+	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_insert] = &entangle::OTNode::proc_ins;
+	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_delete] = &entangle::OTNode::proc_del;
 
 	// OTNodeLink access locks
 	this->q_l = std::shared_ptr<std::mutex> (new std::mutex ());
@@ -237,9 +239,9 @@ void entangle::OTNode::process() {
 			if(succ) {
 				info = this->self;
 			} else {
-				info = this->links[remote->s];
+				info = this->links[s];
 				// check if v <= V
-				succ = ((remote->v.at(0) <= this->self.get_count()) && (remote->v.at(1) <= info.get_count()));
+				succ = ((remote->v[S] <= this->self.get_count()) && (remote->v[s] <= info.get_count()));
 			}
 			if(succ) {
 				auto V = std::map<entangle::sit_t, size_t> ();
@@ -277,10 +279,13 @@ void entangle::OTNode::process() {
 				if(remote->u.type != entangle::nop) {
 					std::stringstream buf;
 					if(remote->u.type == entangle::ins) {
-						buf << entangle::OTNode::cmd_insert << ":" << remote->u.type << ":" << remote->u.pos << ":" << remote->u.c;
+						buf << entangle::OTNode::cmd_insert;
 					} else {
-						buf << entangle::OTNode::cmd_delete << ":" << remote->u.type << ":" << remote->u.pos << ":" << remote->u.c;
+						buf << entangle::OTNode::cmd_delete;
 					}
+
+					buf << ":" << this->self.get_identifier() << ":" << this->self.get_count() << ":" << this->links[s].get_count() << ":" << (size_t) remote->u.type << ":" << remote->u.pos << ":" << remote->u.c;
+
 					for(auto it = this->links.begin(); it != this->links.end(); ++it) {
 						if(it->first != s) {
 							auto info = it->second;
@@ -409,7 +414,7 @@ std::vector<std::string> entangle::OTNode::parse(std::string arg, size_t n_args)
 }
 
 /**
- * expected format: SIT_ID:H:P
+ * expected format: S:P:H
  */
 void entangle::OTNode::proc_join(std::string arg) {
 	std::vector<std::string> v = this->parse(arg, 3);
@@ -446,7 +451,11 @@ bool entangle::OTNode::join_ack(entangle::sit_t s) {
 	return(this->node->push(buf.str(), info.get_hostname(), info.get_port(), true) == buf.str().length());
 }
 
-// allow the original JOIN client to add the server to the list of links
+/**
+ * allow the original JOIN client to add the server to the list of links
+ *
+ * expected format: S:P:H
+ */
 void entangle::OTNode::proc_join_ack(std::string arg) {
 	std::vector<std::string> v = this->parse(arg, 3);
 	if(v.size() != 3) {
@@ -473,6 +482,9 @@ void entangle::OTNode::proc_join_ack(std::string arg) {
 	}
 }
 
+/**
+ * expected format: S
+ */
 void entangle::OTNode::proc_drop(std::string arg) {
 	std::vector<std::string> v = this->parse(arg, 1);
 	if(v.size() != 1) {
@@ -490,5 +502,67 @@ void entangle::OTNode::proc_drop(std::string arg) {
 		if(this->links.count(client_id) == 1) {
 			this->links.erase(client_id);
 		}
+	}
+}
+
+/**
+ * expected format: S:S_count:count:U
+ */
+void entangle::OTNode::proc_ins(std::string arg) {
+	std::vector<std::string> v = this->parse(arg, 4);
+	if(v.size() != 4) {
+		return;
+	}
+	entangle::sit_t client_id;
+	size_t client_count;
+	size_t server_count;
+	entangle::upd_t update;
+	try {
+		client_id = (entangle::sit_t) std::stoll(v.at(0));
+		client_count = (size_t) std::stoll(v.at(1));
+		server_count = (size_t) std::stoll(v.at(2));
+	} catch(const std::invalid_argument& e) {
+		return;
+	}
+	update = dec_upd_t(v.at(3));
+
+	std::map<sit_t, size_t> client_v;
+	client_v[client_id] = client_count;
+	client_v[this->self.get_identifier()] = server_count;
+	entangle::qel_t qel = { client_id, client_v, update };
+	{
+		std::lock_guard<std::mutex> l(*(this->q_l));
+		this->q.push_back(qel);
+	}
+}
+
+/**
+ * expected format: S:S_count:count:U
+ */
+void entangle::OTNode::proc_del(std::string arg) {
+	std::vector<std::string> v = this->parse(arg, 4);
+	if(v.size() != 4) {
+		return;
+	}
+	entangle::sit_t client_id;
+	size_t client_count;
+	size_t server_count;
+	entangle::upd_t update;
+	try {
+		client_id = (entangle::sit_t) std::stoll(v.at(0));
+		client_count = (size_t) std::stoll(v.at(1));
+		server_count = (size_t) std::stoll(v.at(2));
+	} catch(const std::invalid_argument& e) {
+		return;
+	}
+	update = dec_upd_t(v.at(3));
+
+	std::map<sit_t, size_t> client_v;
+	client_v[client_id] = client_count;
+	client_v[this->self.get_identifier()] = server_count;
+	entangle::qel_t qel = { client_id, client_v, update };
+	{
+		std::lock_guard<std::mutex> l(*(this->q_l));
+		this->q.push_back(qel);
 	}
 }
