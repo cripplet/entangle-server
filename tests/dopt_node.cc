@@ -27,24 +27,36 @@ TEST_CASE("entangle|dopt_node-insert") {
 	REQUIRE(x.join("localhost", 8000) == true);
 	REQUIRE(y.join("localhost", 8000) == true);
 	REQUIRE(z.join("localhost", 8000) == true);
+	sleep(3);
+	REQUIRE(s.size() == 3);
 
 	REQUIRE(x.ins(0, '1') == true);
-	sleep(1);
-
+	sleep(3);
 	REQUIRE(s.get_context().compare("1") == 0);
 	REQUIRE(x.get_context().compare("1") == 0);
 	REQUIRE(y.get_context().compare("1") == 0);
 	REQUIRE(z.get_context().compare("1") == 0);
 
 	REQUIRE(x.del(0) == true);
-	sleep(1);
-
+	sleep(3);
 	REQUIRE(s.get_context().compare("") == 0);
 	REQUIRE(x.get_context().compare("") == 0);
 	REQUIRE(y.get_context().compare("") == 0);
 	REQUIRE(z.get_context().compare("") == 0);
 
+	REQUIRE(x.ins(0, '1') == true);
+	REQUIRE(y.ins(0, '1') == true);
+	sleep(3);
+	REQUIRE(s.get_context().compare("1") == 0);
+	REQUIRE(x.get_context().compare("1") == 0);
+	REQUIRE(y.get_context().compare("1") == 0);
+	REQUIRE(z.get_context().compare("1") == 0);
+
 	REQUIRE(x.drop("localhost", 8000) == true);
+	REQUIRE(y.drop("localhost", 8000) == true);
+	REQUIRE(z.drop("localhost", 8000) == true);
+	sleep(3);
+	REQUIRE(s.size() == 0);
 	REQUIRE_NOTHROW(s.dn());
 	REQUIRE_NOTHROW(x.dn());
 	REQUIRE_NOTHROW(y.dn());
