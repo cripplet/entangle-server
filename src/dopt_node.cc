@@ -121,7 +121,7 @@ void entangle::OTNode::up() {
 	*(this->flag) = 1;
 	this->daemon = std::shared_ptr<std::thread> (new std::thread(&msgpp::MessageNode::up, &*(this->node)));
 	this->dispat = std::shared_ptr<std::thread> (new std::thread(&entangle::OTNode::dispatch, this));
-	// this->proc_q = std::shared_ptr<std::thread> (new std::thread(&entangle::OTNode::process, this));
+	this->proc_q = std::shared_ptr<std::thread> (new std::thread(&entangle::OTNode::process, this));
 	while(this->node->get_status() == 0);
 }
 
@@ -147,7 +147,7 @@ void entangle::OTNode::dn() {
 	this->node->dn();
 	this->daemon->join();
 	this->dispat->join();
-	// this->proc_q->join();
+	this->proc_q->join();
 }
 
 bool entangle::OTNode::join(std::string hostname, size_t port) {
@@ -199,62 +199,25 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 }
 
 bool entangle::OTNode::ins(size_t pos, char c) {
-	/*
-	entangle::vec_t v;
-	{
-		std::lock_guard<std::mutex> l(*(this->v_l));
-		v = *(this->self.get_v());
-	}
-	std::lock_guard<std::mutex> l(*(this->q_l));
-	this->self.get_q()->push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::ins, pos, c }});
-	 */
+	std::map<entangle::sit_t, size_t> v;
+	v[this->self.get_identifier()] = this->self.get_count();
+	this->q.push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::ins, pos, c } });
 	return(true);
 }
 
 bool entangle::OTNode::del(size_t pos) {
-	/*
-	entangle::vec_t v;
-	{
-		std::lock_guard<std::mutex> l(*(this->v_l));
-		v = *(this->self.get_v());
-	}
-	std::lock_guard<std::mutex> l(*(this->q_l));
-	this->self.get_q()->push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::del, pos, '\0'}});
-	 */
+	std::map<entangle::sit_t, size_t> v;
+	v[this->self.get_identifier()] = this->self.get_count();
+	this->q.push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::del, pos, '\0' } });
 	return(true);
 }
-/**
+
 void entangle::OTNode::process() {
 	while(*(this->flag) == 1) {
-		std::map<sit_t, entangle::OTNodeLink> links;
-		{
-			std::lock_guard<std::recursive_mutex> l(this->links_l);
-			links = this->links;
-		}
-
-		for(auto it = links.begin(); it != links.end(); ++it) {
-			std::shared_ptr<entangle::q_t> q;
-			{
-				std::lock_guard<std::mutex> l(this->q_l);
-				q = it->second.get_q();
-			}
-			auto l = it->second.get_l();
-			auto v = it->second.get_v();
-			for(auto jt = q->begin(); jt != q->end(); ++jt) {
-				for(size_t i = 0; i < jt->v.size(); ++i) {
-					if(jt->v.at(i) > v.at(i)) {
-						break;
-					}
-					// if v <= V
-					this->self.
-					            L[(V[s] + v[S] + 1):(V[s] + V[s] + 1)] := L[(V[s] + v[S]):(V[s] + V[S])]
-
-				}
-			}
+		for(auto candidate = this->q.begin(); candidate != q.end(); ++candidate) {
 		}
 	}
 }
- */
 
 /**
  * dispatch stuff

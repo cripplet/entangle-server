@@ -121,7 +121,7 @@ namespace entangle {
 			// background threads running
 			std::shared_ptr<std::thread> daemon;
 			std::shared_ptr<std::thread> dispat;
-			// std::shared_ptr<std::thread> proc_q;
+			std::shared_ptr<std::thread> proc_q;
 
 			// shared context -- the actual data to be edited
 			obj_t x;
@@ -130,7 +130,7 @@ namespace entangle {
 			std::shared_ptr<std::recursive_mutex> links_l;
 			std::map<sit_t, OTNodeLink> links;
 			OTNodeLink self;
-			std::shared_ptr<q_t> q;
+			q_t q;
 
 			// join success indicators
 			std::shared_ptr<std::atomic<bool>> is_joining;
@@ -159,7 +159,7 @@ namespace entangle {
 			upd_t t(upd_t u, upd_t up, sit_t p, sit_t pp);
 
 			// the bulk of the context update logic resides here
-			// void process();
+			void process();
 
 			static std::map<std::string, disp_func> dispatch_table;
 
