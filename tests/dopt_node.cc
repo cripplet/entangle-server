@@ -27,7 +27,7 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	REQUIRE(s.size() == 1);
 
 	/**
-	 * single node-server topology
+	 * single node, single server topology
 	 */
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
@@ -44,7 +44,7 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	REQUIRE(s.size() == 2);
 
 	/**
-	 * multi node-server topology
+	 * multi node, single server topology
 	 */
 	std::cout << "SENDING INS" << std::endl;
 	REQUIRE(x.ins(0, '1') == true);
@@ -53,13 +53,11 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	CHECK(x.get_context().compare("1") == 0);
 	CHECK(y.get_context().compare("1") == 0);
 
-/*
 	REQUIRE(x.del(0) == true);
 	sleep(1);
 	CHECK(s.get_context().compare("") == 0);
 	CHECK(x.get_context().compare("") == 0);
 	CHECK(y.get_context().compare("") == 0);
- */
 
 	/**
 	 * concurrent update checking

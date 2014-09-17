@@ -289,7 +289,7 @@ void entangle::OTNode::process() {
 				V[S] = this->self.get_count();
 				V[s] = this->links[s].get_count();
 				// delay until v[s] = V[s] + 1 (proceed if V >= v)
-				if((qel->v[s] < V[s]) || (qel->v[S] < V[S])) {
+				if((qel->v[s] < V[s]) && (qel->v[S] < V[S])) {
 					std::cout << this->self.get_port() << ": skipping qel (v[s] == " << qel->v[s] << ", V[s] == " << V[s] << ")" << std::endl;
 					goto proc_loop_tail;
 				}
