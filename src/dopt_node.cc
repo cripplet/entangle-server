@@ -232,84 +232,84 @@ bool entangle::OTNode::del(size_t pos) {
 	return(true);
 }
 
+/**
+ * cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
+ */
 void entangle::OTNode::process() {
+	std::map<entangle::func_type, std::string> tlb;
+	tlb[entangle::nop] = "NOPE";
+	tlb[entangle::ins] = entangle::OTNode::cmd_insert;
+	tlb[entangle::del] = entangle::OTNode::cmd_delete;
+
 	while(*(this->flag) == 1) {
 		std::lock_guard<std::mutex> l(*(this->q_l));
-		for(auto remote = this->q.begin(); remote != q.end(); ++remote) {
-			bool succ = (this->self.get_identifier() == remote->s);
+		/**
+		 * remote: update instance of type qel_t
+		 */
+		for(auto qel = this->q.begin(); qel != this->q.end(); ++qel) {
 			size_t S = this->self.get_identifier();
-			size_t s = remote->s;
+			size_t s = qel->s;
 
-			if(!succ) {
-				// check if v <= V
-				succ = ((remote->v[S] <= this->self.get_count()) && (remote->v[s] <= this->links[s].get_count()));
-			}
-
-			if(succ) {
-				auto V = std::map<entangle::sit_t, size_t> ();
-				V[S] = this->self.get_count();
-				if(S != s) {
-					V[s] = this->links[s].get_count();
-				}
-				auto v = remote->v;
-				std::shared_ptr<entangle::log_t> l;
-				size_t offset;
-				if(s != this->self.get_identifier()) {
-					l = this->links[remote->s].get_l();
-					this->links[remote->s].set_offset();
-					offset = this->links[remote->s].get_offset();
-				} else {
-					l = this->self.get_l();
-					this->self.set_offset();
-					offset = this->self.get_offset();
-				}
-
-				// modify the update appropriately
-				l->insert(l->begin(), remote->u);
-				std::cout << "V[s]...: " << (V[s] + v[S] + 1) << ", end: " << (V[s] + V[s] + 1) << std::endl;
-				for(size_t k = (V[s] + v[S] + 1); k < (V[s] + V[s] + 1); ++k) {
-					auto U = l->at(k - offset);
-					auto u = remote->u;
-					l->at(k - offset) = this->t(U, u, S, s);
-					u = this->t(u, U, s, S);
-					if(s == this->self.get_identifier()) {
-						this->self.set_count();
-					} else {
-						this->links[s].set_count();
-					}
-					remote->u = u;
-				}
-
-				// broadcast to the rest of the tree, and update
-				if(remote->u.type != entangle::nop) {
+			// local update
+			if(S == s) {
+				// V[S] := V[S] + 1
+				this->self.set_count();
+				// broadcast remote update
+				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
+					auto V = entangle::vec_t();
+					V[S] = this->self.get_count();
+					V[info->first] = info->second.get_count();
 					std::stringstream buf;
-					if(remote->u.type == entangle::ins) {
-						buf << entangle::OTNode::cmd_insert;
-					} else {
-						buf << entangle::OTNode::cmd_delete;
-					}
-					buf << ":" << this->self.get_identifier() << ":" << this->self.get_count();
-
-					for(auto it = this->links.begin(); it != this->links.end(); ++it) {
-						if(it->first != s) {
-							auto info = it->second;
-							buf << ":" << info.get_count() << ":" << (size_t) remote->u.type << ":" << remote->u.pos << ":" << remote->u.c;
-							this->node->push(buf.str(), info.get_hostname(), info.get_port(), true);
-						}
-					}
-
-					if(s != this->self.get_identifier()) {
-						this->links[s].set_offset();
-					} else {
-						this->self.set_offset();
-					}
-
-					// actually apply the update
-					this->apply(remote->u);
+					buf << tlb[qel->u.type] << ":" << S << ":" << this->self.get_count() << ":" << info->second.get_count() << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
+					this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
 				}
+				// X := U(X)
+				this->apply(qel->u);
+				this->q.erase(qel++);
+			// remote update
+			} else {
+				auto V = entangle::vec_t();
+				V[S] = this->self.get_count();
+				V[s] = this->links[s].get_count();
+				// delay until v[s] = V[s] + 1
+				std::cout << "qel->v[s]: " << qel->v[s] << std::endl;
+				std::cout << "V[S]     : " << V[S] << std::endl;
+				if(qel->v[s] < (V[S] + 1)) {
+					continue;
+				}
+				auto L = this->self.get_l();
+				// L[ V[s] + v[S] + 1 .. V[s] + V[s] + 1 := ...
+				this->links[s].set_offset();
+				size_t offset = this->links[s].get_offset();
+				// L[V[s] + v[S]] := u
+				L->insert(L->begin(), qel->u);
+				// For k := V[s] + v[S] + 1 to ...
+				for(size_t k = (V[s] + qel->v[S] + 1); k != (V[s] + V[S] + 1); ++k) {
+					// Let U = L[k]
+					auto U = L->at(k - offset);
+					// L[k] := T(U, u ...
+					L->at(k - offset) = this->t(U, qel->u, S, s);
+					// u := T(u, U, ...
+					qel->u = this->t(qel->u, U, s, S);
+				}
+				// V[s] := V[s] + 1
+				this->links[s].set_count();
+				// broadcast remote update to everyone but the originating sender
+				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
+					if(info->first != s) {
+						auto V = entangle::vec_t();
+						V[S] = this->self.get_count();
+						V[info->first] = info->second.get_count();
+						std::stringstream buf;
+						buf << tlb[qel->u.type] << ":" << S << ":" << this->self.get_count() << ":" << info->second.get_count() << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
+						this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
+					}
+				}
+				// X := u(X)
+				this->apply(qel->u);
+				this->q.erase(qel++);
 			}
 		}
-		this->q.clear();
 	}
 }
 
@@ -324,7 +324,9 @@ void entangle::OTNode::apply(entangle::upd_t u) {
 
 std::string entangle::OTNode::get_context() { return(this->x); }
 
-// cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
+/**
+ * cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
+ */
 entangle::upd_t entangle::OTNode::t(entangle::upd_t u, entangle::upd_t up, entangle::sit_t p, entangle::sit_t pp) {
 	std::cout << this->self.get_identifier() << "u  type: " <<  u.type << std::endl;
 	std::cout << this->self.get_identifier() << "up type: " << up.type << std::endl;
