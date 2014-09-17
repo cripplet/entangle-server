@@ -278,6 +278,7 @@ void entangle::OTNode::process() {
 				goto proc_loop_tail;
 			// remote update
 			} else {
+				std::cout << this->self.get_port() << ": processing remote packet" << std::endl;
 				// invalid update
 				if(this->links.count(s) == 0) {
 					to_delete = true;
@@ -287,7 +288,7 @@ void entangle::OTNode::process() {
 				V[S] = this->self.get_count();
 				V[s] = this->links[s].get_count();
 				// delay until v[s] = V[s] + 1
-				if(qel->v[s] < (V[S] + 1)) {
+				if(qel->v[s] < (V[s] + 1)) {
 					goto proc_loop_tail;
 				}
 				auto L = this->self.get_l();
@@ -315,6 +316,8 @@ void entangle::OTNode::process() {
 						V[info->first] = info->second.get_count();
 						std::stringstream buf;
 						buf << tlb[qel->u.type] << ":" << S << ":" << this->self.get_count() << ":" << info->second.get_count() << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
+						std::cout << this->self.get_port() << " sending: " << buf.str() << std::endl;
+						std::cout << this->self.get_port() << " to     : " << info->second.get_port() << std::endl;
 						this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
 					}
 				}
@@ -546,8 +549,12 @@ void entangle::OTNode::proc_drop(std::string arg) {
  * expected format: S:S_count:count:U
  */
 void entangle::OTNode::proc_ins(std::string arg) {
+	if(this->self.get_port() == 8051) {
+		std::cout << this->self.get_port() << ": proc_ins -- " << arg << std::endl;
+	}
 	std::vector<std::string> v = this->parse(arg, 4);
 	if(v.size() != 4) {
+		std::cout << this->self.get_port() << ": proc_ins errored out" << std::endl;
 		return;
 	}
 	entangle::sit_t client_id;
@@ -559,6 +566,7 @@ void entangle::OTNode::proc_ins(std::string arg) {
 		client_count = (size_t) std::stoll(v.at(1));
 		server_count = (size_t) std::stoll(v.at(2));
 	} catch(const std::invalid_argument& e) {
+		std::cout << this->self.get_port() << ": proc_ins errored out" << std::endl;
 		return;
 	}
 	update = dec_upd_t(v.at(3));
@@ -570,6 +578,7 @@ void entangle::OTNode::proc_ins(std::string arg) {
 	{
 		std::lock_guard<std::mutex> l(*(this->q_l));
 		this->q.push_back(qel);
+		std::cout << this->self.get_port() << ": pushed back qel" << std::endl;
 	}
 }
 
