@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <vector>
 
+#include <iostream>
+
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
 
@@ -234,19 +236,15 @@ void entangle::OTNode::process() {
 	while(*(this->flag) == 1) {
 		std::lock_guard<std::mutex> l(*(this->q_l));
 		for(auto remote = this->q.begin(); remote != q.end(); ++remote) {
-			entangle::OTNodeLink info;
-
 			bool succ = (this->self.get_identifier() == remote->s);
 			size_t S = this->self.get_identifier();
 			size_t s = remote->s;
 
-			if(succ) {
-				info = this->self;
-			} else {
-				info = this->links[s];
+			if(!succ) {
 				// check if v <= V
-				succ = ((remote->v[S] <= this->self.get_count()) && (remote->v[s] <= info.get_count()));
+				succ = ((remote->v[S] <= this->self.get_count()) && (remote->v[s] <= this->links[s].get_count()));
 			}
+
 			if(succ) {
 				auto V = std::map<entangle::sit_t, size_t> ();
 				V[S] = this->self.get_count();
@@ -268,11 +266,12 @@ void entangle::OTNode::process() {
 
 				// modify the update appropriately
 				l->insert(l->begin(), remote->u);
+				std::cout << "V[s]...: " << (V[s] + v[S] + 1) << ", end: " << (V[s] + V[s] + 1) << std::endl;
 				for(size_t k = (V[s] + v[S] + 1); k < (V[s] + V[s] + 1); ++k) {
 					auto U = l->at(k - offset);
 					auto u = remote->u;
-					l->at(k - offset) = t(U, u, S, s);
-					u = t(u, U, s, S);
+					l->at(k - offset) = this->t(U, u, S, s);
+					u = this->t(u, U, s, S);
 					if(s == this->self.get_identifier()) {
 						this->self.set_count();
 					} else {
@@ -298,6 +297,13 @@ void entangle::OTNode::process() {
 							this->node->push(buf.str(), info.get_hostname(), info.get_port(), true);
 						}
 					}
+
+					if(s != this->self.get_identifier()) {
+						this->links[s].set_offset();
+					} else {
+						this->self.set_offset();
+					}
+
 					// actually apply the update
 					this->apply(remote->u);
 				}
@@ -320,6 +326,15 @@ std::string entangle::OTNode::get_context() { return(this->x); }
 
 // cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
 entangle::upd_t entangle::OTNode::t(entangle::upd_t u, entangle::upd_t up, entangle::sit_t p, entangle::sit_t pp) {
+	std::cout << this->self.get_identifier() << "u  type: " <<  u.type << std::endl;
+	std::cout << this->self.get_identifier() << "up type: " << up.type << std::endl;
+	std::cout << this->self.get_identifier() << "u  pos : " <<  u.pos  << std::endl;
+	std::cout << this->self.get_identifier() << "up pos : " << up.pos  << std::endl;
+	std::cout << this->self.get_identifier() << "u  c   : " <<  u.c    << std::endl;
+	std::cout << this->self.get_identifier() << "up c   : " << up.c    << std::endl;
+	std::cout << this->self.get_identifier() << "p      : " << p       << std::endl;
+	std::cout << this->self.get_identifier() << "pp c   : " << pp      << std::endl;
+
 	entangle::upd_t nop = { entangle::nop, 0, '\0' };
 	if(u.type == entangle::nop) {
 		return(nop);
