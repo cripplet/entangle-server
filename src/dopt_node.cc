@@ -282,16 +282,19 @@ void entangle::OTNode::process() {
 				// invalid update
 				if(this->links.count(s) == 0) {
 					to_delete = true;
+					std::cout << this->self.get_port() << ": deleting node -- no link" << std::endl;
 					goto proc_loop_tail;
 				}
 				auto V = entangle::vec_t();
 				V[S] = this->self.get_count();
 				V[s] = this->links[s].get_count();
-				// delay until v[s] = V[s] + 1
-				if(qel->v[s] < (V[s] + 1)) {
+				// delay until v[s] = V[s] + 1 (proceed if V >= v)
+				if((qel->v[s] < V[s]) || (qel->v[S] < V[S])) {
+					std::cout << this->self.get_port() << ": skipping qel (v[s] == " << qel->v[s] << ", V[s] == " << V[s] << ")" << std::endl;
 					goto proc_loop_tail;
 				}
-				auto L = this->self.get_l();
+				std::cout << this->self.get_port() << ": things happening" << std::endl;
+				auto L = this->links[s].get_l();
 				// L[ V[s] + v[S] + 1 .. V[s] + V[s] + 1 := ...
 				this->links[s].set_offset();
 				size_t offset = this->links[s].get_offset();
