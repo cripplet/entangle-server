@@ -1,12 +1,15 @@
 #include <atomic>
+#include <chrono>
 #include <ctime>
 #include <iomanip>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <random>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <vector>
 
@@ -242,13 +245,19 @@ void entangle::OTNode::process() {
 	tlb[entangle::del] = entangle::OTNode::cmd_delete;
 
 	while(*(this->flag) == 1) {
-		std::lock_guard<std::mutex> l(*(this->q_l));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
+		std::lock_guard<std::mutex> q_l(*(this->q_l));
+
 		/**
 		 * remote: update instance of type qel_t
 		 */
-		for(auto qel = this->q.begin(); qel != this->q.end(); ++qel) {
+		auto qel = this->q.begin();
+		while(qel != this->q.end()) {
 			size_t S = this->self.get_identifier();
 			size_t s = qel->s;
+
+			bool to_delete = false;
 
 			// local update
 			if(S == s) {
@@ -265,17 +274,21 @@ void entangle::OTNode::process() {
 				}
 				// X := U(X)
 				this->apply(qel->u);
-				this->q.erase(qel++);
+				to_delete = true;
+				goto proc_loop_tail;
 			// remote update
 			} else {
+				// invalid update
+				if(this->links.count(s) == 0) {
+					to_delete = true;
+					goto proc_loop_tail;
+				}
 				auto V = entangle::vec_t();
 				V[S] = this->self.get_count();
 				V[s] = this->links[s].get_count();
 				// delay until v[s] = V[s] + 1
-				std::cout << "qel->v[s]: " << qel->v[s] << std::endl;
-				std::cout << "V[S]     : " << V[S] << std::endl;
 				if(qel->v[s] < (V[S] + 1)) {
-					continue;
+					goto proc_loop_tail;
 				}
 				auto L = this->self.get_l();
 				// L[ V[s] + v[S] + 1 .. V[s] + V[s] + 1 := ...
@@ -307,7 +320,14 @@ void entangle::OTNode::process() {
 				}
 				// X := u(X)
 				this->apply(qel->u);
-				this->q.erase(qel++);
+				to_delete = true;
+				goto proc_loop_tail;
+			}
+			proc_loop_tail:
+			if(to_delete) {
+				qel = this->q.erase(qel);
+			} else {
+				++qel;
 			}
 		}
 	}
@@ -328,15 +348,6 @@ std::string entangle::OTNode::get_context() { return(this->x); }
  * cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
  */
 entangle::upd_t entangle::OTNode::t(entangle::upd_t u, entangle::upd_t up, entangle::sit_t p, entangle::sit_t pp) {
-	std::cout << this->self.get_identifier() << "u  type: " <<  u.type << std::endl;
-	std::cout << this->self.get_identifier() << "up type: " << up.type << std::endl;
-	std::cout << this->self.get_identifier() << "u  pos : " <<  u.pos  << std::endl;
-	std::cout << this->self.get_identifier() << "up pos : " << up.pos  << std::endl;
-	std::cout << this->self.get_identifier() << "u  c   : " <<  u.c    << std::endl;
-	std::cout << this->self.get_identifier() << "up c   : " << up.c    << std::endl;
-	std::cout << this->self.get_identifier() << "p      : " << p       << std::endl;
-	std::cout << this->self.get_identifier() << "pp c   : " << pp      << std::endl;
-
 	entangle::upd_t nop = { entangle::nop, 0, '\0' };
 	if(u.type == entangle::nop) {
 		return(nop);
@@ -465,7 +476,8 @@ void entangle::OTNode::proc_join(std::string arg) {
 }
 
 bool entangle::OTNode::join_ack(entangle::sit_t s) {
-	std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+	std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
+	std::lock_guard<std::mutex> q_l(*(this->q_l));
 
 	std::stringstream buf;
 	buf << entangle::OTNode::cmd_join_ack << ":" << this->self.get_identifier() << ":" << this->self.get_port() << ":" << this->self.get_hostname();
@@ -496,7 +508,8 @@ void entangle::OTNode::proc_join_ack(std::string arg) {
 	}
 
 	{
-		std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+		std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
+		std::lock_guard<std::mutex> q_l(*(this->q_l));
 		if(this->links.count(client_id) == 0) {
 			this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
 			this->is_joining_errno = 0;
@@ -521,7 +534,8 @@ void entangle::OTNode::proc_drop(std::string arg) {
 	}
 
 	{
-		std::lock_guard<std::recursive_mutex> l(*(this->links_l));
+		std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
+		std::lock_guard<std::mutex> q_l(*(this->q_l));
 		if(this->links.count(client_id) == 1) {
 			this->links.erase(client_id);
 		}
