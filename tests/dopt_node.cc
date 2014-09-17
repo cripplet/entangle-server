@@ -46,7 +46,6 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	/**
 	 * multi node, single server topology
 	 */
-	std::cout << "SENDING INS" << std::endl;
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 	CHECK(s.get_context().compare("1") == 0);
@@ -62,14 +61,16 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	/**
 	 * concurrent update checking
 	 */
-/**
+	std::cout << "sending x.ins" << std::endl;
 	REQUIRE(x.ins(0, '1') == true);
+	std::cout << "sending y.ins" << std::endl;
 	REQUIRE(y.ins(0, '1') == true);
 	sleep(1);
 	CHECK(s.get_context().compare("1") == 0);
 	CHECK(x.get_context().compare("1") == 0);
 	CHECK(y.get_context().compare("1") == 0);
 
+/**
 	REQUIRE(x.del(0) == true);
 	REQUIRE(y.del(0) == true);
 	sleep(1);
@@ -77,12 +78,10 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	CHECK(x.get_context().compare("") == 0);
 	CHECK(y.get_context().compare("") == 0);
  */
-	std::cout << "dropping" << std::endl;
 	REQUIRE(x.drop("localhost", 8000) == true);
 	REQUIRE(y.drop("localhost", 8000) == true);
 	sleep(1);
 	REQUIRE(s.size() == 0);
-	std::cout << "shutting down" << std::endl;
 	REQUIRE_NOTHROW(s.dn());
 	REQUIRE_NOTHROW(x.dn());
 	REQUIRE_NOTHROW(y.dn());
