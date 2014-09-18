@@ -271,6 +271,9 @@ void entangle::OTNode::process() {
 					std::stringstream buf;
 					buf << tlb[qel->u.type] << ":" << S << ":" << this->self.get_count() << ":" << info->second.get_count() << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
 					this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
+					// L[V[s] + V[S]] := U
+					auto L = this->links[info->first].get_l();
+					L->insert(L->begin(), qel->u);
 				}
 				// X := U(X)
 				this->apply(qel->u);
@@ -291,7 +294,7 @@ void entangle::OTNode::process() {
 				if((qel->v[s] < V[s]) && (qel->v[S] < V[S])) {
 					goto proc_loop_tail;
 				}
-				std::cout << this->self.get_port() << ": updating qel happening" << std::endl;
+				std::cout << this->self.get_port() << ": updating qel" << std::endl;
 				auto L = this->links[s].get_l();
 				// L[ V[s] + v[S] + 1 .. V[s] + V[s] + 1 := ...
 				this->links[s].set_offset();
@@ -301,6 +304,9 @@ void entangle::OTNode::process() {
 				// For k := V[s] + v[S] + 1 to ...
 				for(size_t k = (V[s] + qel->v[S] + 1); k != (V[s] + V[S] + 1); ++k) {
 					// Let U = L[k]
+					std::cout << this->self.get_port() << ": k == " << k << ", k - offset == " << (k - offset) << std::endl;
+					std::cout << this->self.get_port() << ": L size: " << L->size() << std::endl;
+
 					auto U = L->at(k - offset);
 					// L[k] := T(U, u ...
 					L->at(k - offset) = this->t(U, qel->u, S, s);
