@@ -274,7 +274,7 @@ void entangle::OTNode::process() {
 					// L[V[s] + V[S]] := U
 					auto L = this->links[info->first].get_l();
 					(*L)[V[info->first] + V[S]] = qel->u;
-					std::cout << this->self.get_port() << ": adding to log @ " << V[info->first] + V[S] << std::endl;
+					std::cout << this->self.get_port() << ": adding to LOCAL log @ " << (V[info->first] + V[S]) << " update " << this->enc_upd_t(qel->u) << std::endl;
 				}
 				// X := U(X)
 				this->apply(qel->u);
@@ -296,7 +296,7 @@ void entangle::OTNode::process() {
 					goto proc_loop_tail;
 				}
 				auto L = this->links[s].get_l();
-				// L[ V[s] + v[S] + 1 .. V[s] + V[s] + 1 := ...
+				// L[V[s] + v[S] + 1 .. V[s] + V[s] + 1] := ...
 				for(size_t k = V[s] + V[S] + 1; k >= V[s] + qel->v[S] + 1; --k) {
 					if(L->count(k - 1) != 0) {
 						(*L)[k] = L->at(k - 1);
@@ -305,16 +305,20 @@ void entangle::OTNode::process() {
 
 				// L[V[s] + v[S]] := u
 				(*L)[V[s] + qel->v[S]] = qel->u;
+				std::cout << this->self.get_port() << ": adding to REMOTE log @ " << (V[s] + qel->v[S]) << " update " << this->enc_upd_t(qel->u) << std::endl;
 				// For k := V[s] + v[S] + 1 to ...
 				for(size_t k = (V[s] + qel->v[S] + 1); k <= (V[s] + V[S] + 1); ++k) {
+					std::cout << this->self.get_port() << ": k == " << k;
 					// Let U = L[k]
 					if(L->count(k) != 0) {
+						std::cout << ", update " << this->enc_upd_t(qel->u);
 						auto U = L->at(k - 1);
 						// L[k] := T(U, u ...
 						L->at(k) = this->t(U, qel->u, S, s);
 						// u := T(u, U, ...
 						qel->u = this->t(qel->u, U, s, S);
 					}
+					std::cout << std::endl;
 				}
 				// V[s] := V[s] + 1
 				this->links[s].set_count();
