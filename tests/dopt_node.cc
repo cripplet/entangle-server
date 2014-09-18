@@ -32,12 +32,12 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 	CHECK(s.get_context().compare("1") == 0);
-	CHECK(x.get_context().compare("1") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
 
 	REQUIRE(x.del(0) == true);
 	sleep(1);
 	CHECK(s.get_context().compare("") == 0);
-	CHECK(x.get_context().compare("") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
 
 	REQUIRE(y.join("localhost", 8000) == true);
 	sleep(1);
@@ -49,14 +49,14 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 	CHECK(s.get_context().compare("1") == 0);
-	CHECK(x.get_context().compare("1") == 0);
-	CHECK(y.get_context().compare("1") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
+	CHECK(s.get_context().compare(y.get_context()) == 0);
 
 	REQUIRE(x.del(0) == true);
 	sleep(1);
 	CHECK(s.get_context().compare("") == 0);
-	CHECK(x.get_context().compare("") == 0);
-	CHECK(y.get_context().compare("") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
+	CHECK(s.get_context().compare(y.get_context()) == 0);
 
 	/**
 	 * concurrent update checking
@@ -68,17 +68,16 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	sleep(1);
 	std::cout << ":s " << s.get_context() << std::endl;
 	CHECK(s.get_context().compare("1") == 0);
-	std::cout << ":x " << s.get_context() << std::endl;
-	CHECK(x.get_context().compare("1") == 0);
-	std::cout << ":y " << s.get_context() << std::endl;
-	CHECK(y.get_context().compare("1") == 0);
+	std::cout << ":x " << x.get_context() << std::endl;
+	CHECK(s.get_context().compare(x.get_context()) == 0);
+	CHECK(s.get_context().compare(y.get_context()) == 0);
 
 	REQUIRE(x.del(0) == true);
 	REQUIRE(y.del(0) == true);
 	sleep(1);
 	CHECK(s.get_context().compare("") == 0);
-	CHECK(x.get_context().compare("") == 0);
-	CHECK(y.get_context().compare("") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
+	CHECK(s.get_context().compare(y.get_context()) == 0);
 
 	REQUIRE(x.drop("localhost", 8000) == true);
 	REQUIRE(y.drop("localhost", 8000) == true);
