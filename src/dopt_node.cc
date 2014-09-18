@@ -273,7 +273,8 @@ void entangle::OTNode::process() {
 					this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
 					// L[V[s] + V[S]] := U
 					auto L = this->links[info->first].get_l();
-					L->insert(L->begin(), qel->u);
+					(*L)[V[s] + V[S]] = qel->u;
+					std::cout << this->self.get_port() << ": adding to log @ " << V[s] + V[S] << std::endl;
 				}
 				// X := U(X)
 				this->apply(qel->u);
@@ -297,21 +298,37 @@ void entangle::OTNode::process() {
 				std::cout << this->self.get_port() << ": updating qel" << std::endl;
 				auto L = this->links[s].get_l();
 				// L[ V[s] + v[S] + 1 .. V[s] + V[s] + 1 := ...
-				this->links[s].set_offset();
-				size_t offset = this->links[s].get_offset();
-				// L[V[s] + v[S]] := u
-				L->insert(L->begin(), qel->u);
-				// For k := V[s] + v[S] + 1 to ...
-				for(size_t k = (V[s] + qel->v[S] + 1); k != (V[s] + V[S] + 1); ++k) {
-					// Let U = L[k]
-					std::cout << this->self.get_port() << ": k == " << k << ", k - offset == " << (k - offset) << std::endl;
-					std::cout << this->self.get_port() << ": L size: " << L->size() << std::endl;
+				std::cout << this->self.get_port() << ": L size == " << L->size() << std::endl;
+				std::cout << this->self.get_port() << ": V[s] == " << V[s] << std::endl;
+				std::cout << this->self.get_port() << ": V[S] == " << V[S] << std::endl;
+				std::cout << this->self.get_port() << ": v[S] == " << qel->v[S] << std::endl;
+				for(size_t k = V[s] + V[S] + 1; k >= V[s] + qel->v[S] + 1; --k) {
+					std::cout << this->self.get_port() << ": k == " << k << std::endl;
+					if(L->count(k - 1) != 0) {
+						std::cout << this->self.get_port() << ": migrating k" << std::endl;
+						(*L)[k] = L->at(k - 1);
+					} else {
+						std::cout << this->self.get_port() << ": skipped k" << std::endl;
+					}
+				}
+				std::cout << this->self.get_port() << ": finished updating qel" << std::endl;
 
-					auto U = L->at(k - offset);
-					// L[k] := T(U, u ...
-					L->at(k - offset) = this->t(U, qel->u, S, s);
-					// u := T(u, U, ...
-					qel->u = this->t(qel->u, U, s, S);
+				// L[V[s] + v[S]] := u
+				(*L)[V[s] + qel->v[S]] = qel->u;
+				// For k := V[s] + v[S] + 1 to ...
+				for(size_t k = (V[s] + qel->v[S] + 1); k <= (V[s] + V[S] + 1); ++k) {
+					// Let U = L[k]
+					std::cout << this->self.get_port() << ": k' == " << k << std::endl;
+					std::cout << this->self.get_port() << ": V[s] == " << V[s] << std::endl;
+					std::cout << this->self.get_port() << ": V[S] == " << V[S] << std::endl;
+					std::cout << this->self.get_port() << ": v[S] == " << qel->v[S] << std::endl;
+					if(L->count(k) != 0) {
+						auto U = L->at(k - 1);
+						// L[k] := T(U, u ...
+						L->at(k) = this->t(U, qel->u, S, s);
+						// u := T(u, U, ...
+						qel->u = this->t(qel->u, U, s, S);
+					}
 				}
 				// V[s] := V[s] + 1
 				this->links[s].set_count();
