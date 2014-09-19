@@ -310,7 +310,7 @@ void entangle::OTNode::process() {
 				for(size_t k = (V[s] + qel->v[S] + 1); k < (V[s] + V[S] + 1); ++k) {
 					// Let U = L[k]
 					if(L->count(k) != 0) {
-						auto U = L->at(k - 1);
+						auto U = L->at(k);
 						// L[k] := T(U, u ...
 						L->at(k) = this->t(U, qel->u, S, s);
 						// u := T(u, U, ...
