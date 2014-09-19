@@ -46,12 +46,14 @@ TEST_CASE("entangle|dopt_node-ins-del") {
 	/**
 	 * multi node, single server topology
 	 */
+	std::cout << "REQUIRE(x.ins(0, '1') == true)" << std::endl;
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 	CHECK(s.get_context().compare("1") == 0);
 	CHECK(s.get_context().compare(x.get_context()) == 0);
 	CHECK(s.get_context().compare(y.get_context()) == 0);
 
+	std::cout << "REQUIRE(x.del(0) == true)" << std::endl;
 	REQUIRE(x.del(0) == true);
 	sleep(1);
 	CHECK(s.get_context().compare("") == 0);
@@ -76,8 +78,9 @@ TEST_CASE("entangle|dopt_node-concurrent") {
 	REQUIRE_NOTHROW(x.up());
 	REQUIRE_NOTHROW(y.up());
 	REQUIRE(x.join("localhost", 8000) == true);
+	REQUIRE(y.join("localhost", 8000) == true);
 	sleep(1);
-	REQUIRE(s.size() == 1);
+	REQUIRE(s.size() == 2);
 
 	/**
 	 * concurrent update checking

@@ -263,20 +263,23 @@ void entangle::OTNode::process() {
 			if(S == s) {
 				// V[S] := V[S] + 1
 				this->self.set_count();
+
 				// broadcast remote update
 				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
 					auto V = entangle::vec_t();
 					V[S] = this->self.get_count();
 					V[info->first] = info->second.get_count();
 					std::stringstream buf;
-					buf << tlb[qel->u.type] << ":" << S << ":" << this->self.get_count() << ":" << info->second.get_count() << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
+					buf << tlb[qel->u.type] << ":" << S << ":" << V[S] << ":" << V[info->first] << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
 					this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
+
 					// L[V[s] + V[S]] := U
 					auto L = this->links[info->first].get_l();
 					(*L)[V[info->first] + V[S]] = qel->u;
 					std::cout << this->self.get_port() << ": adding to LOCAL log @ " << (V[info->first] + V[S]) << " update " << this->enc_upd_t(qel->u) << std::endl;
 					std::cout << this->self.get_port() << ": V[s], V[S] == " << V[info->first] << ", " << V[S] << std::endl;
 				}
+
 				// X := U(X)
 				this->apply(qel->u);
 				to_delete = true;
@@ -292,12 +295,19 @@ void entangle::OTNode::process() {
 				auto V = entangle::vec_t();
 				V[S] = this->self.get_count();
 				V[s] = this->links[s].get_count();
+
 				// delay until v[s] = V[s] + 1 (proceed if V >= v)
-				if((qel->v[s] < V[s])) { //  && (qel->v[S] < V[S])) {
+				if(qel->v[s] != V[s] + 1) {
+					std::cout << this->self.get_port() << ": skipping" << std::endl;
+					if(qel->v[s] < V[s] + 1) {
+						std::cout << this->self.get_port() << ": skipping and deleting duplicate" << std::endl;
+						to_delete = true;
+					}
 					goto proc_loop_tail;
 				}
-				auto L = this->links[s].get_l();
+
 				// L[V[s] + v[S] + 1 .. V[s] + V[s] + 1] := ...
+				auto L = this->links[s].get_l();
 				for(size_t k = V[s] + V[S] + 1; k >= V[s] + qel->v[S] + 1; --k) {
 					if(L->count(k - 1) != 0) {
 						(*L)[k] = L->at(k - 1);
@@ -308,6 +318,7 @@ void entangle::OTNode::process() {
 				(*L)[V[s] + qel->v[S]] = qel->u;
 				std::cout << this->self.get_port() << ": adding to REMOTE log @ " << (V[s] + qel->v[S]) << " update " << this->enc_upd_t(qel->u) << std::endl;
 				std::cout << this->self.get_port() << ": V[s], v[S] == " << V[s] << ", " << qel->v[S] << std::endl;
+
 				// For k := V[s] + v[S] + 1 to ...
 				for(size_t k = (V[s] + qel->v[S] + 1); k <= (V[s] + V[S] + 1); ++k) {
 					std::cout << this->self.get_port() << ": k == " << k;
@@ -322,8 +333,10 @@ void entangle::OTNode::process() {
 					}
 					std::cout << std::endl;
 				}
+
 				// V[s] := V[s] + 1
 				this->links[s].set_count();
+
 				// broadcast remote update to everyone but the originating sender
 				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
 					if(info->first != s) {
@@ -335,6 +348,7 @@ void entangle::OTNode::process() {
 						this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
 					}
 				}
+
 				// X := u(X)
 				std::cout << this->self.get_port() << ": applying " << this->enc_upd_t(qel->u) << std::endl;
 				this->apply(qel->u);
@@ -584,6 +598,8 @@ void entangle::OTNode::proc_ins(std::string arg) {
 	std::map<sit_t, size_t> client_v;
 	client_v[client_id] = client_count;
 	client_v[this->self.get_identifier()] = server_count;
+	std::cout << this->self.get_port() << ": ins arg == " << arg << std::endl;
+	std::cout << this->self.get_port() << ": client count == " << client_count << std::endl;
 	entangle::qel_t qel = { client_id, client_v, update };
 	{
 		std::lock_guard<std::mutex> l(*(this->q_l));
