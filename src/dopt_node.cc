@@ -250,7 +250,6 @@ void entangle::OTNode::process() {
 
 			// local update
 			if(S == s) {
-				std::cout << this->self.get_port() << ": ::process local packet" << std::endl;
 
 				// broadcast remote update
 				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
@@ -266,8 +265,6 @@ void entangle::OTNode::process() {
 					// L[V[s] + V[S]] := U
 					auto L = this->links[info->first].get_l();
 					(*L)[V[info->first] + V[S]] = qel->u;
-					std::cout << this->self.get_port() << ": ::process LOCAL log @ " << (V[info->first] + V[S]) << " update " << this->enc_upd_t(qel->u) << std::endl;
-					std::cout << this->self.get_port() << ": ::process (V[s], V[S]) == (" << V[info->first] << ", " << V[S] << ")" << std::endl;
 				}
 
 				// X := U(X)
@@ -276,7 +273,6 @@ void entangle::OTNode::process() {
 				goto proc_loop_tail;
 			// remote update
 			} else {
-				std::cout << this->self.get_port() << ": ::process remote packet" << std::endl;
 				// invalid update
 				if(this->links.count(s) == 0) {
 					to_delete = true;
@@ -304,22 +300,17 @@ void entangle::OTNode::process() {
 
 				// L[V[s] + v[S]] := u
 				(*L)[V[s] + qel->v[S]] = qel->u;
-				std::cout << this->self.get_port() << ": ::process REMOTE log @ " << (V[s] + qel->v[S]) << " update " << this->enc_upd_t(qel->u) << std::endl;
-				std::cout << this->self.get_port() << ": ::process (V[s], v[S], V[S]) == (" << V[s] << ", " << qel->v[S] << ", " << V[S] << ")" << std::endl;
 
 				// For k := V[s] + v[S] + 1 to ...
 				for(size_t k = (V[s] + qel->v[S] + 1); k <= (V[s] + V[S] + 1); ++k) {
-					std::cout << this->self.get_port() << ": ::process k == " << k;
 					// Let U = L[k]
 					if(L->count(k) != 0) {
-						std::cout << ", update " << this->enc_upd_t(qel->u);
 						auto U = L->at(k - 1);
 						// L[k] := T(U, u ...
 						L->at(k) = this->t(U, qel->u, S, s);
 						// u := T(u, U, ...
 						qel->u = this->t(qel->u, U, s, S);
 					}
-					std::cout << std::endl;
 				}
 
 				// V[s] := V[s] + 1
@@ -342,7 +333,6 @@ void entangle::OTNode::process() {
 				}
 
 				// X := u(X)
-				std::cout << this->self.get_port() << ": ::process applying " << this->enc_upd_t(qel->u) << std::endl;
 				this->apply(qel->u);
 				to_delete = true;
 				goto proc_loop_tail;
@@ -359,14 +349,21 @@ void entangle::OTNode::process() {
 
 // we only expect u to be an INSERT or DELETE operation
 void entangle::OTNode::apply(entangle::upd_t u) {
+	if(u.type == entangle::nop) {
+		return;
+	}
 	if(u.type == entangle::ins) {
 		this->x.insert(u.pos, 1, u.c);
-	} else {
+	} else if(u.type == entangle::del) {
 		this->x.erase(u.pos, 1);
 	}
 }
 
-std::string entangle::OTNode::get_context() { return(this->x); }
+std::string entangle::OTNode::get_context() {
+	std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
+	std::lock_guard<std::mutex> q_l(*(this->q_l));
+	return(this->x);
+}
 
 /**
  * cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
@@ -590,7 +587,6 @@ void entangle::OTNode::proc_ins(std::string arg) {
 	std::map<sit_t, size_t> client_v;
 	client_v[client_id] = client_count;
 	client_v[this->self.get_identifier()] = server_count;
-	std::cout << this->self.get_port() << ": ::proc_ins arg == " << arg << std::endl;
 	entangle::qel_t qel = { client_id, client_v, update };
 	{
 		std::lock_guard<std::mutex> l(*(this->q_l));
