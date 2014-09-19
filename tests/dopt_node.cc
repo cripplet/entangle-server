@@ -47,6 +47,16 @@ TEST_CASE("entangle|dopt_node-convergence") {
 	CHECK(s.get_context().compare("21") == 0);
 	CHECK(x.get_context().compare(s.get_context()) == 0);
 
+	REQUIRE(s.del(0) == true);
+	sleep(1);
+	CHECK(s.get_context().compare("1") == 0);
+	CHECK(s.get_context().compare(s.get_context()) == 0);
+
+	REQUIRE(x.del(0) == true);
+	sleep(1);
+	CHECK(s.get_context().compare("") == 0);
+	CHECK(s.get_context().compare(s.get_context()) == 0);
+
 	REQUIRE(x.drop("localhost", 8000) == true);
 	sleep(1);
 	REQUIRE_NOTHROW(s.dn());
