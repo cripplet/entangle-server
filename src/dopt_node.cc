@@ -286,9 +286,7 @@ void entangle::OTNode::process() {
 
 				// delay until v[s] = V[s] + 1 (proceed if V >= v)
 				if(qel->v[s] != V[s] + 1) {
-					std::cout << this->self.get_port() << ": skipping" << std::endl;
 					if(qel->v[s] < V[s] + 1) {
-						std::cout << this->self.get_port() << ": skipping and deleting duplicate" << std::endl;
 						to_delete = true;
 					}
 					goto proc_loop_tail;
@@ -305,7 +303,7 @@ void entangle::OTNode::process() {
 				// L[V[s] + v[S]] := u
 				(*L)[V[s] + qel->v[S]] = qel->u;
 				std::cout << this->self.get_port() << ": adding to REMOTE log @ " << (V[s] + qel->v[S]) << " update " << this->enc_upd_t(qel->u) << std::endl;
-				std::cout << this->self.get_port() << ": V[s], v[S] == " << V[s] << ", " << qel->v[S] << std::endl;
+				std::cout << this->self.get_port() << ": V[s], v[S], V[S] == " << V[s] << ", " << qel->v[S] << ", " << V[S] << std::endl;
 
 				// For k := V[s] + v[S] + 1 to ...
 				for(size_t k = (V[s] + qel->v[S] + 1); k <= (V[s] + V[S] + 1); ++k) {
