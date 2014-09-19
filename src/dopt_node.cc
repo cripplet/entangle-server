@@ -329,12 +329,15 @@ void entangle::OTNode::process() {
 				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
 					if(info->first != s) {
 						auto V = entangle::vec_t();
+						// as far as the client is aware, this is a local update
 						info->second.set_server_count();
 						V[S] = info->second.get_server_count();
 						V[info->first] = info->second.get_client_count();
 						std::stringstream buf;
 						buf << tlb[qel->u.type] << ":" << S << ":" << V[S] << ":" << V[info->first] << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
 						this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
+
+						(*(info->second.get_l()))[V[info->first] + V[S]] = qel->u;
 					}
 				}
 

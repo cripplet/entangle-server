@@ -93,6 +93,9 @@ TEST_CASE("entangle|dopt_node-concurrent") {
 	CHECK(s.get_context().compare("1") == 0);
 	CHECK(s.get_context().compare(x.get_context()) == 0);
 	CHECK(s.get_context().compare(y.get_context()) == 0);
+	std::cout << "s.get_context: " << s.get_context() << std::endl;
+	std::cout << "x.get_context: " << x.get_context() << std::endl;
+	std::cout << "y.get_context: " << y.get_context() << std::endl;
 
 	/**
 	REQUIRE(x.del(0) == true);
