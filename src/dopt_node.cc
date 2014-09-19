@@ -250,7 +250,7 @@ void entangle::OTNode::process() {
 
 			// local update
 			if(S == s) {
-				std::cout << this->self.get_port() << ": ::processing local packet" << std::endl;
+				std::cout << this->self.get_port() << ": ::process local packet" << std::endl;
 
 				// broadcast remote update
 				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
@@ -276,7 +276,7 @@ void entangle::OTNode::process() {
 				goto proc_loop_tail;
 			// remote update
 			} else {
-				std::cout << this->self.get_port() << ": ::processing remote packet" << std::endl;
+				std::cout << this->self.get_port() << ": ::process remote packet" << std::endl;
 				// invalid update
 				if(this->links.count(s) == 0) {
 					to_delete = true;
