@@ -242,6 +242,7 @@ TEST_CASE("entangle|dopt_node-concurrent") {
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 	REQUIRE(y.ins(0, '1') == true);
+	sleep(1);
 	CHECK(s.get_context().compare("11") == 0);
 	CHECK(s.get_context().compare(x.get_context()) == 0);
 	CHECK(s.get_context().compare(y.get_context()) == 0);
