@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <vector>
 
+#include <iostream>
+
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
 
@@ -288,6 +290,9 @@ void entangle::OTNode::process() {
 					goto proc_loop_tail;
 				}
 
+				std::cout << this->self.get_port() << ": ::process remote update entry point for update from " << this->links[s].get_port() << std::endl;
+				std::cout << this->self.get_port() << ": ::process shifting back log" << std::endl;
+
 				// L[V[s] + v[S] + 1 .. V[s] + V[s] + 1] := ...
 				auto L = this->links[s].get_l();
 				for(size_t k = V[s] + V[S] + 1; k >= V[s] + qel->v[S] + 1; --k) {
@@ -299,8 +304,10 @@ void entangle::OTNode::process() {
 				// L[V[s] + v[S]] := u
 				(*L)[V[s] + qel->v[S]] = qel->u;
 
+				std::cout << this->self.get_port() << ": ::process transforming update " << this->enc_upd_t(qel->u) << std::endl;
+				std::cout << this->self.get_port() << ": ::process (V[s], qel->v[S], V[S]) == (" << V[s] << ", " << qel->v[S] << ", " << V[S] << ")" << std::endl;
 				// For k := V[s] + v[S] + 1 to ...
-				for(size_t k = (V[s] + qel->v[S] + 1); k <= (V[s] + V[S] + 1); ++k) {
+				for(size_t k = (V[s] + qel->v[S] + 1); k < (V[s] + V[S] + 1); ++k) {
 					// Let U = L[k]
 					if(L->count(k) != 0) {
 						auto U = L->at(k - 1);
@@ -308,6 +315,7 @@ void entangle::OTNode::process() {
 						L->at(k) = this->t(U, qel->u, S, s);
 						// u := T(u, U, ...
 						qel->u = this->t(qel->u, U, s, S);
+						std::cout << this->self.get_port() << ": ::process transformed at k == " << k << ", update to " << this->enc_upd_t(qel->u) << std::endl;
 					}
 				}
 

@@ -239,12 +239,14 @@ TEST_CASE("entangle|dopt_node-concurrent") {
 	REQUIRE(y.join("localhost", 8000) == true);
 	sleep(1);
 
+	std::cout << "REQUIRE(X.INS(0, '1') == TRUE)" << std::endl;
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 	CHECK(s.get_context().compare("1") == 0);
 	CHECK(s.get_context().compare(x.get_context()) == 0);
 	CHECK(s.get_context().compare(y.get_context()) == 0);
 
+	std::cout << "REQUIRE(Y.INS(0, '1') == TRUE)" << std::endl;
 	REQUIRE(y.ins(0, '1') == true);
 	sleep(1);
 	CHECK(s.get_context().compare("11") == 0);
