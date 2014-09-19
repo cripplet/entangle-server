@@ -295,7 +295,8 @@ void entangle::OTNode::process() {
 
 				// L[V[s] + v[S] + 1 .. V[s] + V[s] + 1] := ...
 				auto L = this->links[s].get_l();
-				for(size_t k = V[s] + V[S] + 1; k >= V[s] + qel->v[S] + 1; --k) {
+				for(size_t k = V[s] + V[S]; k >= V[s] + qel->v[S] + 1; --k) {
+				// for(size_t k = V[s] + V[S] + 1; k >= V[s] + qel->v[S] + 1; --k) {
 					if(L->count(k - 1) != 0) {
 						(*L)[k] = L->at(k - 1);
 					}
@@ -375,6 +376,8 @@ std::string entangle::OTNode::get_context() {
  * cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
  */
 entangle::upd_t entangle::OTNode::t(entangle::upd_t u, entangle::upd_t up, entangle::sit_t p, entangle::sit_t pp) {
+	std::cout << this->self.get_port() << ": u  == " << this->enc_upd_t(u) << std::endl;
+	std::cout << this->self.get_port() << ": up == " << this->enc_upd_t(up) << std::endl;
 	entangle::upd_t nop = { entangle::nop, 0, '\0' };
 	if(u.type == entangle::nop) {
 		return(nop);
