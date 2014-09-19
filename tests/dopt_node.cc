@@ -207,6 +207,49 @@ TEST_CASE("entangle|dopt_node-concurrent") {
 	REQUIRE(y.drop("localhost", 8000) == true);
 	sleep(1);
 	REQUIRE(s.size() == 0);
+
+	REQUIRE(x.join("localhost", 8000) == true);
+	REQUIRE(y.join("localhost", 8000) == true);
+	sleep(1);
+
+	REQUIRE(x.ins(0, '1') == true);
+	sleep(1);
+	CHECK(s.get_context().compare("1") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
+	CHECK(s.get_context().compare(y.get_context()) == 0);
+
+	REQUIRE(x.ins(0, '1') == true);
+	sleep(1);
+	CHECK(s.get_context().compare("11") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
+	CHECK(s.get_context().compare(y.get_context()) == 0);
+
+	REQUIRE(x.del(0) == true);
+	REQUIRE(x.del(0) == true);
+	sleep(1);
+	CHECK(s.get_context().compare("") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
+	CHECK(s.get_context().compare(y.get_context()) == 0);
+
+	REQUIRE(x.drop("localhost", 8000) == true);
+	REQUIRE(y.drop("localhost", 8000) == true);
+	sleep(1);
+
+	REQUIRE(x.join("localhost", 8000) == true);
+	REQUIRE(y.join("localhost", 8000) == true);
+	sleep(1);
+
+	REQUIRE(x.ins(0, '1') == true);
+	sleep(1);
+	REQUIRE(y.ins(0, '1') == true);
+	CHECK(s.get_context().compare("11") == 0);
+	CHECK(s.get_context().compare(x.get_context()) == 0);
+	CHECK(s.get_context().compare(y.get_context()) == 0);
+
+	REQUIRE(x.drop("localhost", 8000) == true);
+	REQUIRE(y.drop("localhost", 8000) == true);
+	sleep(1);
+
 	REQUIRE_NOTHROW(s.dn());
 	REQUIRE_NOTHROW(x.dn());
 	REQUIRE_NOTHROW(y.dn());
