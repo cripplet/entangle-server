@@ -55,11 +55,10 @@ namespace entangle {
 			size_t get_port();
 			std::string get_hostname();
 
-			size_t get_count();
-			void set_count();
-
-			size_t get_offset();
-			void set_offset();
+			size_t get_server_count();
+			size_t get_client_count();
+			void set_server_count();
+			void set_client_count();
 
 			std::shared_ptr<log_t> get_l();
 
@@ -68,8 +67,10 @@ namespace entangle {
 			 * variable names are from the paper
 			 */
 			sit_t s;
-			size_t count;
-			size_t offset;
+			// equivalent to V[S]
+			size_t server_count;
+			// equivalent to V[s]
+			size_t client_count;
 			std::shared_ptr<log_t> l;
 
 			/**

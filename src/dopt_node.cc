@@ -47,8 +47,8 @@ entangle::OTNodeLink::OTNodeLink(std::string hostname, size_t port, sit_t id) {
 	this->port = port;
 	this->s = id;
 
-	this->count = 0;
-	this->offset = 0;
+	this->server_count = 0;
+	this->client_count = 0;
 	this->l = std::shared_ptr<entangle::log_t> (new entangle::log_t ());
 }
 
@@ -56,13 +56,10 @@ entangle::sit_t entangle::OTNodeLink::get_identifier() { return(this->s); }
 size_t entangle::OTNodeLink::get_port() { return(this->port); }
 std::string entangle::OTNodeLink::get_hostname() { return(this->hostname); }
 
-// vS
-size_t entangle::OTNodeLink::get_count() { return(this->count); }
-void entangle::OTNodeLink::set_count() { this->count++; }
-
-// log offset
-size_t entangle::OTNodeLink::get_offset() { return(this->offset); }
-void entangle::OTNodeLink::set_offset() { this->offset++; }
+size_t entangle::OTNodeLink::get_server_count() { return(this->server_count); }
+size_t entangle::OTNodeLink::get_client_count() { return(this->client_count); }
+void entangle::OTNodeLink::set_server_count() { this->server_count++; }
+void entangle::OTNodeLink::set_client_count() { this->client_count++; }
 
 std::shared_ptr<entangle::log_t> entangle::OTNodeLink::get_l() { return(this->l); }
 
@@ -216,22 +213,14 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 }
 
 bool entangle::OTNode::ins(size_t pos, char c) {
-	std::map<entangle::sit_t, size_t> v;
-	v[this->self.get_identifier()] = this->self.get_count();
-	{
-		std::lock_guard<std::mutex> l(*(this->q_l));
-		this->q.push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::ins, pos, c } });
-	}
+	std::lock_guard<std::mutex> l(*(this->q_l));
+	this->q.push_back(entangle::qel_t { this->self.get_identifier(), std::map<entangle::sit_t, size_t> (), entangle::upd_t { entangle::ins, pos, c } });
 	return(true);
 }
 
 bool entangle::OTNode::del(size_t pos) {
-	std::map<entangle::sit_t, size_t> v;
-	v[this->self.get_identifier()] = this->self.get_count();
-	{
-		std::lock_guard<std::mutex> l(*(this->q_l));
-		this->q.push_back(entangle::qel_t { this->self.get_identifier(), v, entangle::upd_t { entangle::del, pos, '\0' } });
-	}
+	std::lock_guard<std::mutex> l(*(this->q_l));
+	this->q.push_back(entangle::qel_t { this->self.get_identifier(), std::map<entangle::sit_t, size_t> (), entangle::upd_t { entangle::del, pos, '\0' } });
 	return(true);
 }
 
@@ -261,14 +250,13 @@ void entangle::OTNode::process() {
 
 			// local update
 			if(S == s) {
-				// V[S] := V[S] + 1
-				this->self.set_count();
-
 				// broadcast remote update
 				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
+					// V[S] := V[S] + 1
+					info->second.set_server_count();
 					auto V = entangle::vec_t();
-					V[S] = this->self.get_count();
-					V[info->first] = info->second.get_count();
+					V[S] = info->second.get_server_count();
+					V[info->first] = info->second.get_client_count();
 					std::stringstream buf;
 					buf << tlb[qel->u.type] << ":" << S << ":" << V[S] << ":" << V[info->first] << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
 					this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
@@ -293,8 +281,8 @@ void entangle::OTNode::process() {
 					goto proc_loop_tail;
 				}
 				auto V = entangle::vec_t();
-				V[S] = this->self.get_count();
-				V[s] = this->links[s].get_count();
+				V[S] = this->links[s].get_server_count();
+				V[s] = this->links[s].get_client_count();
 
 				// delay until v[s] = V[s] + 1 (proceed if V >= v)
 				if(qel->v[s] != V[s] + 1) {
@@ -335,16 +323,17 @@ void entangle::OTNode::process() {
 				}
 
 				// V[s] := V[s] + 1
-				this->links[s].set_count();
+				this->links[s].set_client_count();
 
 				// broadcast remote update to everyone but the originating sender
 				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
 					if(info->first != s) {
 						auto V = entangle::vec_t();
-						V[S] = this->self.get_count();
-						V[info->first] = info->second.get_count();
+						info->second.set_server_count();
+						V[S] = info->second.get_server_count();
+						V[info->first] = info->second.get_client_count();
 						std::stringstream buf;
-						buf << tlb[qel->u.type] << ":" << S << ":" << this->self.get_count() << ":" << info->second.get_count() << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
+						buf << tlb[qel->u.type] << ":" << S << ":" << V[S] << ":" << V[info->first] << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
 						this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
 					}
 				}
