@@ -139,6 +139,9 @@ namespace entangle {
 			OTNodeLink self;
 			q_t q;
 
+			bool is_root;
+			size_t host;
+
 			// join success indicators
 			std::shared_ptr<std::atomic<bool>> is_joining;
 			bool is_joining_errno;

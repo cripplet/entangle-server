@@ -1,4 +1,3 @@
-#include <iostream>
 #include <unistd.h>
 
 #include "libs/catch/catch.hpp"
@@ -28,7 +27,6 @@ TEST_CASE("entangle|dopt_node-join") {
 	REQUIRE(y.join("localhost", 8000) == false);
 	REQUIRE(s.size() == 1);
 	REQUIRE(s.get_context().compare("") == 0);
-	std::cout << "'" << s.get_context() << "','" << x.get_context() << "'" << std::endl;
 	REQUIRE(s.get_context().compare(x.get_context()) == 0);
 	REQUIRE(x.drop("localhost", 8000) == true);
 
@@ -48,8 +46,8 @@ TEST_CASE("entangle|dopt_node-join") {
 	// cannot join when local context is modified
 	REQUIRE(x.ins(0, '1'));
 	sleep(1);
+	REQUIRE(x.get_context().compare("1") == 0);
 	REQUIRE(x.join("localhost", 8000) == false);
-	REQUIRE(x.get_context().compare("") == 0);
 
 	REQUIRE_NOTHROW(s.dn());
 	REQUIRE_NOTHROW(x.dn());
