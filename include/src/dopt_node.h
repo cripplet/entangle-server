@@ -115,6 +115,7 @@ namespace entangle {
 
 			static const std::string cmd_join;
 			static const std::string cmd_join_ack;
+			static const std::string cmd_sync;
 			static const std::string cmd_drop;
 			static const std::string cmd_insert;
 			static const std::string cmd_delete;
@@ -149,7 +150,9 @@ namespace entangle {
 
 			// process incoming commands
 			bool join_ack(sit_t s);
+			bool sync(sit_t s);
 			void proc_join(std::string arg);
+			void proc_sync(std::string arg);
 			void proc_join_ack(std::string arg);
 			void proc_drop(std::string arg);
 
@@ -158,7 +161,7 @@ namespace entangle {
 			void proc_del(std::string arg);
 
 			// locks for the node's log and queue
-			std::shared_ptr<std::mutex> q_l;
+			std::shared_ptr<std::recursive_mutex> q_l;
 
 			// differs from the paper -- we're doing the brunt of the work here instead of returning update functions
 			// this still *functions* as the transformation matrix, but returns the function *args*, not the *function*

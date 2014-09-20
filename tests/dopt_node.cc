@@ -1,3 +1,4 @@
+#include <iostream>
 #include <unistd.h>
 
 #include "libs/catch/catch.hpp"
@@ -15,8 +16,8 @@ TEST_CASE("entangle|dopt_node-enc") {
 
 TEST_CASE("entangle|dopt_node-join") {
 	auto s = entangle::OTNode(8000, 1);
-	auto x = entangle::OTNode(8050, 1);
-	auto y = entangle::OTNode(8050, 0);
+	auto x = entangle::OTNode(8050, 0);
+	auto y = entangle::OTNode(8051, 0);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
@@ -27,7 +28,8 @@ TEST_CASE("entangle|dopt_node-join") {
 	REQUIRE(y.join("localhost", 8000) == false);
 	REQUIRE(s.size() == 1);
 	REQUIRE(s.get_context().compare("") == 0);
-	REQUIRE(x.get_context().compare("") == 0);
+	std::cout << "'" << s.get_context() << "','" << x.get_context() << "'" << std::endl;
+	REQUIRE(s.get_context().compare(x.get_context()) == 0);
 	REQUIRE(x.drop("localhost", 8000) == true);
 
 	// sync data
