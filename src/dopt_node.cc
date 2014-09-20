@@ -13,8 +13,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include <iostream>
-
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
 
@@ -290,13 +288,9 @@ void entangle::OTNode::process() {
 					goto proc_loop_tail;
 				}
 
-				std::cout << this->self.get_port() << ": ::process remote update entry point for update from " << this->links[s].get_port() << std::endl;
-				std::cout << this->self.get_port() << ": ::process shifting back log" << std::endl;
-
 				// L[V[s] + v[S] + 1 .. V[s] + V[s] + 1] := ...
 				auto L = this->links[s].get_l();
 				for(size_t k = V[s] + V[S]; k >= V[s] + qel->v[S] + 1; --k) {
-				// for(size_t k = V[s] + V[S] + 1; k >= V[s] + qel->v[S] + 1; --k) {
 					if(L->count(k - 1) != 0) {
 						(*L)[k] = L->at(k - 1);
 					}
@@ -305,8 +299,6 @@ void entangle::OTNode::process() {
 				// L[V[s] + v[S]] := u
 				(*L)[V[s] + qel->v[S]] = qel->u;
 
-				std::cout << this->self.get_port() << ": ::process transforming update " << this->enc_upd_t(qel->u) << std::endl;
-				std::cout << this->self.get_port() << ": ::process (V[s], qel->v[S], V[S]) == (" << V[s] << ", " << qel->v[S] << ", " << V[S] << ")" << std::endl;
 				// For k := V[s] + v[S] + 1 to ...
 				for(size_t k = (V[s] + qel->v[S] + 1); k < (V[s] + V[S] + 1); ++k) {
 					// Let U = L[k]
@@ -316,7 +308,6 @@ void entangle::OTNode::process() {
 						L->at(k) = this->t(U, qel->u, S, s);
 						// u := T(u, U, ...
 						qel->u = this->t(qel->u, U, s, S);
-						std::cout << this->self.get_port() << ": ::process transformed at k == " << k << ", update to " << this->enc_upd_t(qel->u) << std::endl;
 					}
 				}
 
@@ -376,8 +367,6 @@ std::string entangle::OTNode::get_context() {
  * cf. fig. 2, Cormack 1995 (A Counterexample to dOPT)
  */
 entangle::upd_t entangle::OTNode::t(entangle::upd_t u, entangle::upd_t up, entangle::sit_t p, entangle::sit_t pp) {
-	std::cout << this->self.get_port() << ": u  == " << this->enc_upd_t(u) << std::endl;
-	std::cout << this->self.get_port() << ": up == " << this->enc_upd_t(up) << std::endl;
 	entangle::upd_t nop = { entangle::nop, 0, '\0' };
 	if(u.type == entangle::nop) {
 		return(nop);
