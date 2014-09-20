@@ -180,7 +180,6 @@ bool entangle::OTNode::join(std::string hostname, size_t port) {
 				this->is_joining_errno = 1;
 				break;
 			}
-			sleep(1);
 		}
 		return(!this->is_joining_errno);
 	}
@@ -232,7 +231,6 @@ void entangle::OTNode::process() {
 	tlb[entangle::del] = entangle::OTNode::cmd_delete;
 
 	while(*(this->flag) == 1) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
 		std::lock_guard<std::mutex> q_l(*(this->q_l));
 
