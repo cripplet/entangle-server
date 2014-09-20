@@ -13,6 +13,46 @@ TEST_CASE("entangle|dopt_node-enc") {
 	REQUIRE(n.cmp_upd_t(n.dec_upd_t("1:100:c"), { entangle::del, 100, 'c' }) == true);
 }
 
+TEST_CASE("entangle|dopt_node-join") {
+	auto s = entangle::OTNode(8000, 1);
+	auto x = entangle::OTNode(8050, 1);
+	auto y = entangle::OTNode(8050, 0);
+
+	REQUIRE_NOTHROW(s.up());
+	REQUIRE_NOTHROW(x.up());
+	REQUIRE_NOTHROW(y.up());
+
+	// connection limits
+	REQUIRE(x.join("localhost", 8000) == true);
+	REQUIRE(y.join("localhost", 8000) == false);
+	REQUIRE(s.size() == 1);
+	REQUIRE(s.get_context().compare("") == 0);
+	REQUIRE(x.get_context().compare("") == 0);
+	REQUIRE(x.drop("localhost", 8000) == true);
+
+	// sync data
+	REQUIRE(s.ins(0, '1'));
+	sleep(1);
+	REQUIRE(x.join("localhost", 8000) == true);
+	sleep(1);
+	REQUIRE(s.get_context().compare("1") == 0);
+	REQUIRE(s.get_context().compare(x.get_context()) == 0);
+	REQUIRE(x.drop("localhost", 8000) == true);
+	sleep(1);
+	REQUIRE(x.get_context().compare("") == 0);
+	REQUIRE(s.size() == 0);
+	REQUIRE(x.size() == 0);
+
+	// cannot join when local context is modified
+	REQUIRE(x.ins(0, '1'));
+	sleep(1);
+	REQUIRE(x.join("localhost", 8000) == false);
+	REQUIRE(x.get_context().compare("") == 0);
+
+	REQUIRE_NOTHROW(s.dn());
+	REQUIRE_NOTHROW(x.dn());
+	REQUIRE_NOTHROW(y.dn());
+}
 
 TEST_CASE("entangle|dopt_node-convergence") {
 	auto s = entangle::OTNode(8000, 100);
