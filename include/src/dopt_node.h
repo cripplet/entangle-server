@@ -2,6 +2,7 @@
 #define _ENTANGLE_DOPT_NODE
 
 #include <atomic>
+#include <chrono>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -175,7 +176,7 @@ namespace entangle {
 			void process();
 
 			static std::map<std::string, disp_func> dispatch_table;
-
+			static std::chrono::milliseconds increment;
 	};
 }
 #endif

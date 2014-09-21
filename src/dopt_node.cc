@@ -68,6 +68,7 @@ const std::string entangle::OTNode::cmd_sync = "SYNC";
 const std::string entangle::OTNode::cmd_drop = "DROP";
 const std::string entangle::OTNode::cmd_insert = "INSE";
 const std::string entangle::OTNode::cmd_delete = "DELE";
+std::chrono::milliseconds entangle::OTNode::increment = std::chrono::milliseconds(50);
 
 entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5, max_conn + 5));
@@ -138,7 +139,9 @@ void entangle::OTNode::up() {
 	this->daemon = std::shared_ptr<std::thread> (new std::thread(&msgpp::MessageNode::up, &*(this->node)));
 	this->dispat = std::shared_ptr<std::thread> (new std::thread(&entangle::OTNode::dispatch, this));
 	this->proc_q = std::shared_ptr<std::thread> (new std::thread(&entangle::OTNode::process, this));
-	while(this->node->get_status() == 0);
+	while(this->node->get_status() == 0) {
+			std::this_thread::sleep_for(entangle::OTNode::increment);
+	}
 }
 
 /**
@@ -151,6 +154,8 @@ void entangle::OTNode::dispatch() {
 			if(entangle::OTNode::dispatch_table.count(msg.substr(0, 4)) != 0) {
 				(this->*entangle::OTNode::dispatch_table[msg.substr(0, 4)])(msg.substr(5));
 			}
+		} else {
+			std::this_thread::sleep_for(entangle::OTNode::increment);
 		}
 	}
 }
@@ -252,115 +257,118 @@ void entangle::OTNode::process() {
 	tlb[entangle::del] = entangle::OTNode::cmd_delete;
 
 	while(*(this->flag) == 1) {
-		std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
-		std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
+		{
+			std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
+			std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
 
-		/**
-		 * remote: update instance of type qel_t
-		 */
-		auto qel = this->q.begin();
-		while(qel != this->q.end()) {
-			size_t S = this->self.get_identifier();
-			size_t s = qel->s;
+			/**
+			 * remote: update instance of type qel_t
+			 */
+			auto qel = this->q.begin();
+			while(qel != this->q.end()) {
+				size_t S = this->self.get_identifier();
+				size_t s = qel->s;
 
-			bool to_delete = false;
+				bool to_delete = false;
 
-			// local update
-			if(S == s) {
+				// local update
+				if(S == s) {
 
-				// broadcast remote update
-				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
-					// V[S] := V[S] + 1
-					info->second.set_server_count();
-					auto V = entangle::vec_t();
-					V[S] = info->second.get_server_count();
-					V[info->first] = info->second.get_client_count();
-					std::stringstream buf;
-					buf << tlb[qel->u.type] << ":" << S << ":" << V[S] << ":" << V[info->first] << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
-					this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
-
-					// L[V[s] + V[S]] := U
-					auto L = this->links[info->first].get_l();
-					(*L)[V[info->first] + V[S]] = qel->u;
-				}
-
-				// X := U(X)
-				this->apply(qel->u);
-				to_delete = true;
-				goto proc_loop_tail;
-			// remote update
-			} else {
-				// invalid update
-				if(this->links.count(s) == 0) {
-					to_delete = true;
-					goto proc_loop_tail;
-				}
-				auto V = entangle::vec_t();
-				V[S] = this->links[s].get_server_count();
-				V[s] = this->links[s].get_client_count();
-
-				// delay until v[s] = V[s] + 1 (proceed if V >= v)
-				if(qel->v[s] != V[s] + 1) {
-					if(qel->v[s] < V[s] + 1) {
-						to_delete = true;
-					}
-					goto proc_loop_tail;
-				}
-
-				// L[V[s] + v[S] + 1 .. V[s] + V[s] + 1] := ...
-				auto L = this->links[s].get_l();
-				for(size_t k = V[s] + V[S]; k >= V[s] + qel->v[S] + 1; --k) {
-					if(L->count(k - 1) != 0) {
-						(*L)[k] = L->at(k - 1);
-					}
-				}
-
-				// L[V[s] + v[S]] := u
-				(*L)[V[s] + qel->v[S]] = qel->u;
-
-				// For k := V[s] + v[S] + 1 to ...
-				for(size_t k = (V[s] + qel->v[S] + 1); k < (V[s] + V[S] + 1); ++k) {
-					// Let U = L[k]
-					if(L->count(k) != 0) {
-						auto U = L->at(k);
-						// L[k] := T(U, u ...
-						L->at(k) = this->t(U, qel->u, S, s);
-						// u := T(u, U, ...
-						qel->u = this->t(qel->u, U, s, S);
-					}
-				}
-
-				// V[s] := V[s] + 1
-				this->links[s].set_client_count();
-
-				// broadcast remote update to everyone but the originating sender
-				for(auto info = this->links.begin(); info != this->links.end(); ++info) {
-					if(info->first != s) {
-						auto V = entangle::vec_t();
-						// as far as the client is aware, this is a local update
+					// broadcast remote update
+					for(auto info = this->links.begin(); info != this->links.end(); ++info) {
+						// V[S] := V[S] + 1
 						info->second.set_server_count();
+						auto V = entangle::vec_t();
 						V[S] = info->second.get_server_count();
 						V[info->first] = info->second.get_client_count();
 						std::stringstream buf;
 						buf << tlb[qel->u.type] << ":" << S << ":" << V[S] << ":" << V[info->first] << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
 						this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
 
-						(*(info->second.get_l()))[V[info->first] + V[S]] = qel->u;
+						// L[V[s] + V[S]] := U
+						auto L = this->links[info->first].get_l();
+						(*L)[V[info->first] + V[S]] = qel->u;
 					}
-				}
 
-				// X := u(X)
-				this->apply(qel->u);
-				to_delete = true;
-				goto proc_loop_tail;
-			}
-			proc_loop_tail:
-			if(to_delete) {
-				qel = this->q.erase(qel);
-			} else {
-				++qel;
+					// X := U(X)
+					this->apply(qel->u);
+					to_delete = true;
+					goto proc_loop_tail;
+				// remote update
+				} else {
+					// invalid update
+					if(this->links.count(s) == 0) {
+						to_delete = true;
+						goto proc_loop_tail;
+					}
+					auto V = entangle::vec_t();
+					V[S] = this->links[s].get_server_count();
+					V[s] = this->links[s].get_client_count();
+
+					// delay until v[s] = V[s] + 1 (proceed if V >= v)
+					if(qel->v[s] != V[s] + 1) {
+						if(qel->v[s] < V[s] + 1) {
+							to_delete = true;
+						}
+						goto proc_loop_tail;
+					}
+
+					// L[V[s] + v[S] + 1 .. V[s] + V[s] + 1] := ...
+					auto L = this->links[s].get_l();
+					for(size_t k = V[s] + V[S]; k >= V[s] + qel->v[S] + 1; --k) {
+						if(L->count(k - 1) != 0) {
+							(*L)[k] = L->at(k - 1);
+						}
+					}
+
+					// L[V[s] + v[S]] := u
+					(*L)[V[s] + qel->v[S]] = qel->u;
+
+					// For k := V[s] + v[S] + 1 to ...
+					for(size_t k = (V[s] + qel->v[S] + 1); k < (V[s] + V[S] + 1); ++k) {
+						// Let U = L[k]
+						if(L->count(k) != 0) {
+							auto U = L->at(k);
+							// L[k] := T(U, u ...
+							L->at(k) = this->t(U, qel->u, S, s);
+							// u := T(u, U, ...
+							qel->u = this->t(qel->u, U, s, S);
+						}
+					}
+
+					// V[s] := V[s] + 1
+					this->links[s].set_client_count();
+
+					// broadcast remote update to everyone but the originating sender
+					for(auto info = this->links.begin(); info != this->links.end(); ++info) {
+						if(info->first != s) {
+							auto V = entangle::vec_t();
+							// as far as the client is aware, this is a local update
+							info->second.set_server_count();
+							V[S] = info->second.get_server_count();
+							V[info->first] = info->second.get_client_count();
+							std::stringstream buf;
+							buf << tlb[qel->u.type] << ":" << S << ":" << V[S] << ":" << V[info->first] << ":" << (size_t) qel->u.type << ":" << qel->u.pos << ":" << qel->u.c;
+							this->node->push(buf.str(), info->second.get_hostname(), info->second.get_port(), true);
+
+							(*(info->second.get_l()))[V[info->first] + V[S]] = qel->u;
+						}
+					}
+
+					// X := u(X)
+					this->apply(qel->u);
+					to_delete = true;
+					goto proc_loop_tail;
+				}
+				proc_loop_tail:
+				if(to_delete) {
+					qel = this->q.erase(qel);
+				} else {
+					++qel;
+				}
 			}
 		}
+		std::this_thread::sleep_for(entangle::OTNode::increment);
 	}
 }
 
