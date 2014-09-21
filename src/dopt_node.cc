@@ -195,10 +195,12 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 	std::lock_guard<std::recursive_mutex> l(*(this->links_l));
 	std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
 
+	size_t target_id = 0;
 	auto target = this->links.end();
 	for(auto it = this->links.begin(); it != this->links.end(); ++it) {
 		auto info = it->second;
 		if((info.get_hostname().compare(hostname) == 0) && (info.get_port() == port)) {
+			target_id = it->first;
 			target = it;
 			break;
 		}
@@ -214,7 +216,7 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 	this->links.erase(target);
 
 	// disconnecting from host
-	if(!this->is_root && target->first == this->host) {
+	if(!this->is_root && target_id == this->host) {
 		this->q.clear();
 		this->x.assign("");
 		// disconnect all connected clients
