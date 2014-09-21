@@ -190,6 +190,7 @@ bool entangle::OTNode::join(std::string hostname, size_t port) {
 				this->is_joining_errno = 1;
 				break;
 			}
+			std::this_thread::sleep_for(entangle::OTNode::increment);
 		}
 		return(!this->is_joining_errno);
 	}
