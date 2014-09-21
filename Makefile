@@ -32,8 +32,11 @@ prep:
 
 	@mkdir -p tests/files/
 
+DO_TEST?=true
 test: clean $(S_EXECUTABLE) $(T_EXECUTABLE) prep
-	@ulimit -c unlimited && time ./$(T_EXECUTABLE) | tee results.log
+	@if [ "$(DO_TEST)" = "true" ]; then \
+		ulimit -c unlimited && time ./$(T_EXECUTABLE) | tee results.log; \
+	fi
 
 clean:
 	@rm -f $(S_EXECUTABLE) $(T_EXECUTABLE) *.o *.log core
