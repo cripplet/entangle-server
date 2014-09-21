@@ -44,10 +44,26 @@ TEST_CASE("entangle|dopt_node-join") {
 	REQUIRE(x.size() == 0);
 
 	// cannot join when local context is modified
-	REQUIRE(x.ins(0, '1'));
+	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 	REQUIRE(x.get_context().compare("1") == 0);
 	REQUIRE(x.join("localhost", 8000) == false);
+
+	// propagated drops on multi-layered topologies
+	REQUIRE(x.del(0) == true);
+	sleep(1);
+	REQUIRE(x.get_context().compare("") == 0);
+	REQUIRE(x.join("localhost", 8000) == true);
+	REQUIRE(y.join("localhost", 8050) == true);
+	sleep(1);
+	REQUIRE(s.size() == 1);
+	REQUIRE(x.size() == 2);
+	REQUIRE(y.size() == 1);
+	REQUIRE(x.drop("localhost", 8000) == true);
+	sleep(1);
+	REQUIRE(s.size() == 0);
+	REQUIRE(x.size() == 0);
+	REQUIRE(y.size() == 0);
 
 	REQUIRE_NOTHROW(s.dn());
 	REQUIRE_NOTHROW(x.dn());

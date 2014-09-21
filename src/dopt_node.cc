@@ -220,7 +220,7 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 		// disconnect all connected clients
 		auto it = this->links.begin();
 		while(it != this->links.end()) {
-			this->node->push(buf.str(), hostname, port, true);
+			this->node->push(buf.str(), it->second.get_hostname(), it->second.get_port(), true);
 			this->links.erase(it++);
 		}
 	}
