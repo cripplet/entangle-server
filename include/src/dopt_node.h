@@ -10,6 +10,8 @@
 #include <thread>
 #include <vector>
 
+#include "libs/giga/client.h"
+#include "libs/giga/file.h"
 #include "libs/msgpp/msg_node.h"
 
 /**
@@ -87,7 +89,6 @@ namespace entangle {
 	class OTNode;
 	typedef void (OTNode::*disp_func)(std::string);
 	class OTNode {
-
 		public:
 			OTNode(size_t port, size_t max_conn);
 			~OTNode();
@@ -137,6 +138,7 @@ namespace entangle {
 
 			// shared context -- the actual data to be edited
 			obj_t x;
+			std::shared_ptr<giga::File> f;
 
 			// tree structure stuff
 			std::shared_ptr<std::recursive_mutex> links_l;

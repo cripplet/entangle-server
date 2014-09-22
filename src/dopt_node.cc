@@ -1,5 +1,7 @@
 #include <atomic>
+#include <cerrno>
 #include <chrono>
+#include <cstring>
 #include <ctime>
 #include <iomanip>
 #include <iterator>
@@ -9,6 +11,7 @@
 #include <random>
 #include <sstream>
 #include <string>
+#include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
 #include <vector>
@@ -98,16 +101,33 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 
 	// OTNodeLink access locks
 	this->q_l = std::shared_ptr<std::recursive_mutex> (new std::recursive_mutex ());
+
+	// initialize working directory
+	if(mkdir("/tmp/entangle/", S_IRWXU | S_IRWXU | S_IRWXO) == -1) {
+		int e = errno;
+		if(e != EEXIST) {
+			std::stringstream buf;
+			buf << "cannot initialize working directory (errno returned " << e << " ['" << strerror(e) << "'])";
+			throw(exceptionpp::RuntimeError("entangle::OTNode::OTNode", buf.str()));
+		}
+	}
 }
 entangle::OTNode::~OTNode() { this->dn(); }
 
 bool entangle::OTNode::bind(std::string filename) {
 	if(this->is_bound) { return(false); }
+	if(filename.compare("") == 0) {
+		std::stringstream buf;
+		buf << "/tmp/entangle/" << this->self.get_identifier()  << rand();
+		filename.assign(buf.str());
+	}
 	this->is_bound = true;
+	this->f = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
 	return(true);
 }
 
 bool entangle::OTNode::free() {
+	if(!this->is_bound) { return(false); }
 	this->x.assign("");
 	this->is_bound = false;
 	return(true);
@@ -238,8 +258,7 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 	// disconnecting from host
 	if(!this->is_root && target_id == this->host) {
 		this->q.clear();
-		this->is_bound = false;
-		this->x.assign("");
+		this->free();
 		// disconnect all connected clients
 		auto it = this->links.begin();
 		while(it != this->links.end()) {
