@@ -16,8 +16,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include <iostream>
-
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
 
@@ -417,6 +415,11 @@ void entangle::OTNode::process() {
 					}
 
 					// X := u(X)
+					/**
+					 * TODO this->self.get_client() -> this->links[s].get_client()
+					 *
+					 * currently, will raise SIGSEGV if this is attempted
+					 */
 					this->apply(this->self.get_client(), qel->u);
 					to_delete = true;
 					goto proc_loop_tail;
