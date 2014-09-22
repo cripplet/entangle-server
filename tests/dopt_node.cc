@@ -13,6 +13,30 @@ TEST_CASE("entangle|dopt_node-enc") {
 	REQUIRE(n.cmp_upd_t(n.dec_upd_t("1:100:c"), { entangle::del, 100, 'c' }) == true);
 }
 
+TEST_CASE("entangle|dopt_node-bind") {
+	auto s = entangle::OTNode(8000, 1);
+	auto x = entangle::OTNode(8050, 1);
+
+	REQUIRE_NOTHROW(s.up());
+	REQUIRE_NOTHROW(x.up());
+
+	REQUIRE(s.ins(0, '1') == false);
+	REQUIRE(x.join("localhost", 8000) == false);
+
+	REQUIRE(s.bind("") == true);
+	REQUIRE(s.bind("") == false);
+	REQUIRE(s.ins(0, '1') == true);
+	REQUIRE(x.join("localhost", 8000) == true);
+	sleep(1);
+	REQUIRE(x.drop("localhost", 8000) == true);
+
+	REQUIRE(x.bind("") == true);
+	REQUIRE(x.join("localhost", 8000) == false);
+
+	REQUIRE_NOTHROW(s.dn());
+	REQUIRE_NOTHROW(x.dn());
+}
+
 TEST_CASE("entangle|dopt_node-join") {
 	auto s = entangle::OTNode(8000, 1);
 	auto x = entangle::OTNode(8050, 0);
@@ -21,6 +45,8 @@ TEST_CASE("entangle|dopt_node-join") {
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
 	REQUIRE_NOTHROW(y.up());
+
+	REQUIRE(s.bind("") == true);
 
 	// connection limits
 	REQUIRE(x.join("localhost", 8000) == true);
@@ -31,7 +57,7 @@ TEST_CASE("entangle|dopt_node-join") {
 	REQUIRE(x.drop("localhost", 8000) == true);
 
 	// sync data
-	REQUIRE(s.ins(0, '1'));
+	REQUIRE(s.ins(0, '1') == true);
 	sleep(1);
 	REQUIRE(x.join("localhost", 8000) == true);
 	sleep(1);
@@ -44,6 +70,7 @@ TEST_CASE("entangle|dopt_node-join") {
 	REQUIRE(x.size() == 0);
 
 	// cannot join when local context is modified
+	REQUIRE(x.bind("") == true);
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
 	REQUIRE(x.get_context().compare("1") == 0);
@@ -53,6 +80,7 @@ TEST_CASE("entangle|dopt_node-join") {
 	REQUIRE(x.del(0) == true);
 	sleep(1);
 	REQUIRE(x.get_context().compare("") == 0);
+	REQUIRE(x.free() == true);
 	REQUIRE(x.join("localhost", 8000) == true);
 	REQUIRE(y.join("localhost", 8050) == true);
 	sleep(1);
@@ -76,6 +104,9 @@ TEST_CASE("entangle|dopt_node-convergence") {
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
+
+	REQUIRE(s.bind("") == true);
+
 	REQUIRE(x.join("localhost", 8000) == true);
 	sleep(1);
 
@@ -122,6 +153,8 @@ TEST_CASE("entangle|dopt_node-daemon") {
 	auto n = entangle::OTNode(8888, 100);
 	auto m = entangle::OTNode(8889, 100);
 
+	REQUIRE(n.bind("") == true);
+
 	REQUIRE(m.join("localhost", 8888) == false);
 
 	REQUIRE_NOTHROW(n.up());
@@ -157,6 +190,9 @@ TEST_CASE("entangle|dopt_node-topography") {
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
 	REQUIRE_NOTHROW(y.up());
+
+	REQUIRE(s.bind("") == true);
+
 	REQUIRE(x.join("localhost", 8000) == true);
 	sleep(1);
 	REQUIRE(s.size() == 1);
@@ -230,6 +266,9 @@ TEST_CASE("entangle|dopt_node-concurrent") {
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
 	REQUIRE_NOTHROW(y.up());
+
+	REQUIRE(s.bind("") == true);
+
 	REQUIRE(x.join("localhost", 8000) == true);
 	REQUIRE(y.join("localhost", 8000) == true);
 	sleep(1);

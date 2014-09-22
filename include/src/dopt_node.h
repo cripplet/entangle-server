@@ -106,6 +106,10 @@ namespace entangle {
 			// branching factor of the tree (i.e. the number of clients connected to this link
 			size_t size();
 
+			// binds the node to a particular backend
+			bool bind(std::string filename);
+			bool free();
+
 			// calls which will SEND OUT data
 			bool join(std::string hostname, size_t port);
 			bool drop(std::string hostname, size_t port);
@@ -142,6 +146,9 @@ namespace entangle {
 
 			bool is_root;
 			size_t host;
+
+			// a target exists
+			bool is_bound;
 
 			// join success indicators
 			std::shared_ptr<std::atomic<bool>> is_joining;
