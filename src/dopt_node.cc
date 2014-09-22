@@ -42,8 +42,10 @@
  *	typedef std::vector<qel_t> q_t;
  */
 
-entangle::OTNodeLink::OTNodeLink() {}
-entangle::OTNodeLink::OTNodeLink(std::string hostname, size_t port, sit_t id) {
+entangle::OTNodeLink::OTNodeLink() {
+	this->c = NULL;
+}
+entangle::OTNodeLink::OTNodeLink(std::shared_ptr<giga::File> f, std::string hostname, size_t port, sit_t id) {
 	this->hostname = hostname;
 	this->port = port;
 	this->s = id;
@@ -51,7 +53,18 @@ entangle::OTNodeLink::OTNodeLink(std::string hostname, size_t port, sit_t id) {
 	this->server_count = 0;
 	this->client_count = 0;
 	this->l = std::shared_ptr<entangle::log_t> (new entangle::log_t ());
+
+	if(f != NULL) {
+		this->c = f->open();
+	}
 }
+entangle::OTNodeLink::~OTNodeLink() {
+	if(this->c != NULL) {
+		this->c->close();
+	}
+}
+
+std::shared_ptr<giga::Client> entangle::OTNodeLink::get_client() { return(this->c); }
 
 entangle::sit_t entangle::OTNodeLink::get_identifier() { return(this->s); }
 size_t entangle::OTNodeLink::get_port() { return(this->port); }
@@ -76,7 +89,7 @@ std::chrono::milliseconds entangle::OTNode::increment = std::chrono::millisecond
 entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5, max_conn + 5));
 	this->max_conn = max_conn;
-	this->self = entangle::OTNodeLink("localhost", port, rand());
+	this->self = entangle::OTNodeLink(NULL, "localhost", port, rand());
 	this->flag = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
 	this->is_joining = std::shared_ptr<std::atomic<bool>> (new std::atomic<bool> (0));
 	this->links_l = std::shared_ptr<std::recursive_mutex> (new std::recursive_mutex ());
@@ -557,7 +570,7 @@ void entangle::OTNode::proc_join(std::string arg) {
 	}
 
 	if(this->links.count(client_id) == 0) {
-		this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
+		this->links[client_id] = OTNodeLink(NULL, client_hostname, client_port, client_id);
 		this->join_ack(client_id);
 		this->sync(client_id);
 	}
@@ -611,7 +624,7 @@ void entangle::OTNode::proc_join_ack(std::string arg) {
 		std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
 		std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
 		if(this->links.count(client_id) == 0) {
-			this->links[client_id] = OTNodeLink(client_hostname, client_port, client_id);
+			this->links[client_id] = OTNodeLink(NULL, client_hostname, client_port, client_id);
 			this->is_joining_errno = 0;
 			*(this->is_joining) = 0;
 			this->is_root = false;
