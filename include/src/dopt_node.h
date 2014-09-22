@@ -52,7 +52,7 @@ namespace entangle {
 	class OTNodeLink {
 		public:
 			OTNodeLink();
-			OTNodeLink(std::shared_ptr<giga::File> f, std::string hostname, size_t port, sit_t id);
+			OTNodeLink(const std::shared_ptr<giga::File>& f, std::string hostname, size_t port, sit_t id);
 			~OTNodeLink();
 
 			sit_t get_identifier();
@@ -64,6 +64,7 @@ namespace entangle {
 			void set_server_count();
 			void set_client_count();
 
+			void set_client(const std::shared_ptr<giga::File>& f);
 			std::shared_ptr<giga::Client> get_client();
 			std::shared_ptr<log_t> get_l();
 

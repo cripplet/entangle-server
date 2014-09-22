@@ -45,7 +45,7 @@
 entangle::OTNodeLink::OTNodeLink() {
 	this->c = NULL;
 }
-entangle::OTNodeLink::OTNodeLink(std::shared_ptr<giga::File> f, std::string hostname, size_t port, sit_t id) {
+entangle::OTNodeLink::OTNodeLink(const std::shared_ptr<giga::File>& f, std::string hostname, size_t port, sit_t id) {
 	this->hostname = hostname;
 	this->port = port;
 	this->s = id;
@@ -54,9 +54,7 @@ entangle::OTNodeLink::OTNodeLink(std::shared_ptr<giga::File> f, std::string host
 	this->client_count = 0;
 	this->l = std::shared_ptr<entangle::log_t> (new entangle::log_t ());
 
-	if(f != NULL) {
-		this->c = f->open();
-	}
+	this->set_client(f);
 }
 entangle::OTNodeLink::~OTNodeLink() {
 	if(this->c != NULL) {
@@ -65,6 +63,11 @@ entangle::OTNodeLink::~OTNodeLink() {
 }
 
 std::shared_ptr<giga::Client> entangle::OTNodeLink::get_client() { return(this->c); }
+void entangle::OTNodeLink::set_client(const std::shared_ptr<giga::File>& f) {
+	if(f != NULL) {
+		this->c = f->open();
+	}
+}
 
 entangle::sit_t entangle::OTNodeLink::get_identifier() { return(this->s); }
 size_t entangle::OTNodeLink::get_port() { return(this->port); }
@@ -136,6 +139,7 @@ bool entangle::OTNode::bind(std::string filename) {
 	}
 	this->is_bound = true;
 	this->f = std::shared_ptr<giga::File> (new giga::File(filename, "rw+"));
+	this->self.set_client(this->f);
 	return(true);
 }
 
@@ -323,7 +327,6 @@ void entangle::OTNode::process() {
 
 				// local update
 				if(S == s) {
-
 					// broadcast remote update
 					for(auto info = this->links.begin(); info != this->links.end(); ++info) {
 						// V[S] := V[S] + 1
@@ -570,7 +573,7 @@ void entangle::OTNode::proc_join(std::string arg) {
 	}
 
 	if(this->links.count(client_id) == 0) {
-		this->links[client_id] = OTNodeLink(NULL, client_hostname, client_port, client_id);
+		this->links[client_id] = OTNodeLink(this->f, client_hostname, client_port, client_id);
 		this->join_ack(client_id);
 		this->sync(client_id);
 	}
@@ -624,7 +627,7 @@ void entangle::OTNode::proc_join_ack(std::string arg) {
 		std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
 		std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
 		if(this->links.count(client_id) == 0) {
-			this->links[client_id] = OTNodeLink(NULL, client_hostname, client_port, client_id);
+			this->links[client_id] = OTNodeLink(this->f, client_hostname, client_port, client_id);
 			this->is_joining_errno = 0;
 			*(this->is_joining) = 0;
 			this->is_root = false;
