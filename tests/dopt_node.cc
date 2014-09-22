@@ -1,10 +1,12 @@
 #include <unistd.h>
 
+#include <iostream>
+
 #include "libs/catch/catch.hpp"
 
 #include "src/dopt_node.h"
-
 TEST_CASE("entangle|dopt_node-enc") {
+	std::cout << "dopt_node-enc" << std::endl;
 	auto n = entangle::OTNode(8888, 100);
 	entangle::upd_t u = { entangle::del, 100, 'c' };
 	REQUIRE(n.enc_upd_t(u).compare("1:100:c") == 0);
@@ -14,6 +16,7 @@ TEST_CASE("entangle|dopt_node-enc") {
 }
 
 TEST_CASE("entangle|dopt_node-bind") {
+	std::cout << "dopt_node-bind" << std::endl;
 	auto s = entangle::OTNode(8000, 1);
 	auto x = entangle::OTNode(8050, 1);
 
@@ -28,6 +31,7 @@ TEST_CASE("entangle|dopt_node-bind") {
 	REQUIRE(s.ins(0, '1') == true);
 	REQUIRE(x.join("localhost", 8000) == true);
 	sleep(1);
+	REQUIRE(x.bind("") == false);
 	REQUIRE(x.drop("localhost", 8000) == true);
 
 	REQUIRE(x.bind("") == true);
@@ -38,6 +42,7 @@ TEST_CASE("entangle|dopt_node-bind") {
 }
 
 TEST_CASE("entangle|dopt_node-join") {
+	std::cout << "dopt_node-join" << std::endl;
 	auto s = entangle::OTNode(8000, 1);
 	auto x = entangle::OTNode(8050, 0);
 	auto y = entangle::OTNode(8051, 0);
@@ -99,6 +104,7 @@ TEST_CASE("entangle|dopt_node-join") {
 }
 
 TEST_CASE("entangle|dopt_node-convergence") {
+	std::cout << "dopt_node-convergence" << std::endl;
 	auto s = entangle::OTNode(8000, 100);
 	auto x = entangle::OTNode(8050, 2);
 
@@ -113,8 +119,10 @@ TEST_CASE("entangle|dopt_node-convergence") {
 	CHECK(s.get_context().compare("") == 0);
 	CHECK(x.get_context().compare(s.get_context()) == 0);
 
+	std::cout << "x.ins enter" << std::endl;
 	REQUIRE(x.ins(0, '1') == true);
 	sleep(1);
+	std::cout << "x.ins exit" << std::endl;
 	CHECK(s.get_context().compare("1") == 0);
 	CHECK(x.get_context().compare(s.get_context()) == 0);
 
@@ -150,6 +158,7 @@ TEST_CASE("entangle|dopt_node-convergence") {
 }
 
 TEST_CASE("entangle|dopt_node-daemon") {
+	std::cout << "dopt_node-daemon" << std::endl;
 	auto n = entangle::OTNode(8888, 100);
 	auto m = entangle::OTNode(8889, 100);
 
@@ -183,6 +192,7 @@ TEST_CASE("entangle|dopt_node-daemon") {
 }
 
 TEST_CASE("entangle|dopt_node-topography") {
+	std::cout << "dopt_node-topography" << std::endl;
 	auto s = entangle::OTNode(8000, 100);
 	auto x = entangle::OTNode(8050, 2);
 	auto y = entangle::OTNode(8051, 1);
@@ -259,6 +269,7 @@ TEST_CASE("entangle|dopt_node-topography") {
 }
 
 TEST_CASE("entangle|dopt_node-concurrent") {
+	std::cout << "dopt_node-concurrent" << std::endl;
 	auto s = entangle::OTNode(8000, 100);
 	auto x = entangle::OTNode(8050, 1);
 	auto y = entangle::OTNode(8051, 1);

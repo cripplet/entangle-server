@@ -144,6 +144,7 @@ namespace entangle {
 			// shared context -- the actual data to be edited
 			obj_t x;
 			std::shared_ptr<giga::File> f;
+			bool is_dirty;
 
 			// tree structure stuff
 			std::shared_ptr<std::recursive_mutex> links_l;
@@ -184,7 +185,7 @@ namespace entangle {
 			// differs from the paper -- we're doing the brunt of the work here instead of returning update functions
 			// this still *functions* as the transformation matrix, but returns the function *args*, not the *function*
 			upd_t t(upd_t u, upd_t up, sit_t p, sit_t pp);
-			void apply(upd_t u);
+			void apply(const std::shared_ptr<giga::Client>& c, upd_t u);
 
 			// the bulk of the context update logic resides here
 			void process();

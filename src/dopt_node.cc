@@ -16,12 +16,18 @@
 #include <unistd.h>
 #include <vector>
 
+#include <iostream>
+
 #include "libs/exceptionpp/exception.h"
 #include "libs/msgpp/msg_node.h"
 
 #include "src/dopt_node.h"
 
 /**
+ *	type definitions reference
+ *
+ *	these are copied over from include/src/dopt_node.h for easy lookups
+ *
  *	typedef size_t sit_t;
  *	typedef std::string obj_t;
  *	typedef uint8_t func_type;
@@ -101,7 +107,7 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	this->host = 0;
 
 	this->is_bound = false;
-
+	this->is_dirty = false;
 	this->links = std::map<entangle::sit_t, entangle::OTNodeLink> ();
 	this->x = entangle::obj_t ();
 	this->q = entangle::q_t ();
@@ -145,7 +151,9 @@ bool entangle::OTNode::bind(std::string filename) {
 
 bool entangle::OTNode::free() {
 	if(!this->is_bound) { return(false); }
-	this->x.assign("");
+	this->self.get_client()->seek(0, true, true);
+	this->self.get_client()->erase(this->f->get_size());
+	this->is_dirty = true;
 	this->is_bound = false;
 	return(true);
 }
@@ -344,7 +352,7 @@ void entangle::OTNode::process() {
 					}
 
 					// X := U(X)
-					this->apply(qel->u);
+					this->apply(this->self.get_client(), qel->u);
 					to_delete = true;
 					goto proc_loop_tail;
 				// remote update
@@ -409,7 +417,7 @@ void entangle::OTNode::process() {
 					}
 
 					// X := u(X)
-					this->apply(qel->u);
+					this->apply(this->self.get_client(), qel->u);
 					to_delete = true;
 					goto proc_loop_tail;
 				}
@@ -426,20 +434,28 @@ void entangle::OTNode::process() {
 }
 
 // we only expect u to be an INSERT or DELETE operation
-void entangle::OTNode::apply(entangle::upd_t u) {
+void entangle::OTNode::apply(const std::shared_ptr<giga::Client>& c, entangle::upd_t u) {
 	if(u.type == entangle::nop) {
 		return;
 	}
 	if(u.type == entangle::ins) {
-		this->x.insert(u.pos, 1, u.c);
+		c->seek(u.pos, true, true);
+		c->write(std::string(1, u.c), true);
 	} else if(u.type == entangle::del) {
-		this->x.erase(u.pos, 1);
+		c->seek(u.pos, true, true);
+		c->erase(1);
 	}
+	this->is_dirty = true;
 }
 
 std::string entangle::OTNode::get_context() {
 	std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
 	std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
+	if(this->is_dirty) {
+		this->self.get_client()->seek(0, true, true);
+		this->x = this->self.get_client()->read(this->f->get_size());
+		this->is_dirty = false;
+	}
 	return(this->x);
 }
 
@@ -572,8 +588,9 @@ void entangle::OTNode::proc_join(std::string arg) {
 		return;
 	}
 
+	// actually add the client link to the node
 	if(this->links.count(client_id) == 0) {
-		this->links[client_id] = OTNodeLink(this->f, client_hostname, client_port, client_id);
+		this->links[client_id] = entangle::OTNodeLink(this->f, client_hostname, client_port, client_id);
 		this->join_ack(client_id);
 		this->sync(client_id);
 	}
@@ -627,12 +644,14 @@ void entangle::OTNode::proc_join_ack(std::string arg) {
 		std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
 		std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
 		if(this->links.count(client_id) == 0) {
-			this->links[client_id] = OTNodeLink(this->f, client_hostname, client_port, client_id);
+			if(!this->is_bound) {
+				this->bind("");
+			}
+			this->links[client_id] = entangle::OTNodeLink(this->f, client_hostname, client_port, client_id);
 			this->is_joining_errno = 0;
 			*(this->is_joining) = 0;
 			this->is_root = false;
 			this->host = client_id;
-			this->bind("");
 		}
 	}
 }
@@ -644,7 +663,9 @@ void entangle::OTNode::proc_join_ack(std::string arg) {
  */
 void entangle::OTNode::proc_sync(std::string arg) {
 	std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
-	this->x.assign(arg.substr(0, arg.length() - 1));
+	this->self.get_client()->seek(0, true, true);
+	this->self.get_client()->write(arg.substr(0, arg.length() - 1));
+	this->is_dirty = true;
 }
 
 /**
