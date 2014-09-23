@@ -1,8 +1,50 @@
+#include <memory>
 #include <unistd.h>
 
 #include "libs/catch/catch.hpp"
+#include "libs/giga/client.h"
+#include "libs/giga/file.h"
 
 #include "src/dopt_node.h"
+
+TEST_CASE("entangle|dopt_node-save") {
+	auto s = entangle::OTNode(8000, 1);
+	auto x = entangle::OTNode(8050, 0);
+
+	REQUIRE_NOTHROW(s.up());
+	REQUIRE_NOTHROW(x.up());
+
+	REQUIRE(s.bind("tests/files/nonexistent") == true);
+	REQUIRE(s.ins(0, '1') == true);
+	sleep(1);
+	REQUIRE(s.save() == true);
+	REQUIRE(s.get_context().compare("1") == 0);
+
+	auto f = std::shared_ptr<giga::File> (new giga::File("tests/files/nonexistent", "r"));
+	auto c = f->open();
+	REQUIRE(c->read(100).compare("1") == 0);
+	c->close();
+
+	REQUIRE(x.join("localhost", 8000) == true);
+	sleep(1);
+
+	REQUIRE(x.ins(0, '2') == true);
+	sleep(1);
+	REQUIRE(x.save());
+	sleep(1);
+
+	f = std::shared_ptr<giga::File> (new giga::File("tests/files/nonexistent", "r"));
+	c = f->open();
+	REQUIRE(c->read(100).compare("21") == 0);
+	c->close();
+
+	REQUIRE(x.drop("localhost", 8000) == true);
+	sleep(1);
+
+	REQUIRE_NOTHROW(s.dn());
+	REQUIRE_NOTHROW(x.dn());
+}
+
 TEST_CASE("entangle|dopt_node-enc") {
 	auto n = entangle::OTNode(8888, 100);
 	entangle::upd_t u = { entangle::del, 100, 'c' };

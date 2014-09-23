@@ -123,6 +123,7 @@ namespace entangle {
 			// equivalent of local_update
 			bool ins(size_t pos, char c);
 			bool del(size_t pos);
+			bool save();
 
 			static const std::string cmd_join;
 			static const std::string cmd_join_ack;
@@ -130,6 +131,7 @@ namespace entangle {
 			static const std::string cmd_drop;
 			static const std::string cmd_insert;
 			static const std::string cmd_delete;
+			static const std::string cmd_save;
 
 		private:
 			std::shared_ptr<std::atomic<bool>> flag;
@@ -174,6 +176,7 @@ namespace entangle {
 			void proc_sync(std::string arg);
 			void proc_join_ack(std::string arg);
 			void proc_drop(std::string arg);
+			void proc_save(std::string arg);
 
 			// equivalent of remote_update
 			void proc_ins(std::string arg);

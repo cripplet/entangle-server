@@ -91,6 +91,7 @@ const std::string entangle::OTNode::cmd_sync = "SYNC";
 const std::string entangle::OTNode::cmd_drop = "DROP";
 const std::string entangle::OTNode::cmd_insert = "INSE";
 const std::string entangle::OTNode::cmd_delete = "DELE";
+const std::string entangle::OTNode::cmd_save = "SAVE";
 std::chrono::milliseconds entangle::OTNode::increment = std::chrono::milliseconds(50);
 
 entangle::OTNode::OTNode(size_t port, size_t max_conn) {
@@ -118,6 +119,7 @@ entangle::OTNode::OTNode(size_t port, size_t max_conn) {
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_drop] = &entangle::OTNode::proc_drop;
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_insert] = &entangle::OTNode::proc_ins;
 	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_delete] = &entangle::OTNode::proc_del;
+	entangle::OTNode::dispatch_table[entangle::OTNode::cmd_save] = &entangle::OTNode::proc_save;
 
 	// OTNodeLink access locks
 	this->q_l = std::shared_ptr<std::recursive_mutex> (new std::recursive_mutex ());
@@ -290,6 +292,8 @@ bool entangle::OTNode::drop(std::string hostname, size_t port) {
 		}
 	}
 
+	this->is_root = true;
+
 	return(true);
 }
 
@@ -304,6 +308,20 @@ bool entangle::OTNode::del(size_t pos) {
 	if(!this->is_bound) { return(false); }
 	std::lock_guard<std::recursive_mutex> l(*(this->q_l));
 	this->q.push_back(entangle::qel_t { this->self.get_identifier(), std::map<entangle::sit_t, size_t> (), entangle::upd_t { entangle::del, pos, '\0' } });
+	return(true);
+}
+
+bool entangle::OTNode::save() {
+	if(!this->is_bound) { return(false); }
+	std::lock_guard<std::recursive_mutex> links_l(*(this->links_l));
+	std::lock_guard<std::recursive_mutex> q_l(*(this->q_l));
+	if(!this->is_root) {
+		for(auto info = this->links.begin(); info != this->links.end(); ++info) {
+			this->node->push("SAVE:", info->second.get_hostname(), info->second.get_port(), true);
+		}
+	} else {
+		this->f->save();
+	}
 	return(true);
 }
 
@@ -669,6 +687,10 @@ void entangle::OTNode::proc_sync(std::string arg) {
 	this->self.get_client()->seek(0, true, true);
 	this->self.get_client()->write(arg.substr(0, arg.length() - 1));
 	this->is_dirty = true;
+}
+
+void entangle::OTNode::proc_save(std::string arg) {
+	this->save();
 }
 
 /**
