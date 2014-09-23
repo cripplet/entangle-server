@@ -20,7 +20,7 @@ Commands sent to the server is of the form `CMD:AUX`, where `CMD` is a four-lett
 * `DELE:UPD_T` -- Delete a character from the server context.
 * `SAVE` -- Requires the server to save its context.
 
-The format of `UPD_T` is specified in `OTNode::enc_upd_t(UPD_T)`.
+The format of `UPD_T` is specified in `OTNode::enc_upd_t` and `OTNode::dec_upd_t`.
 
 Resources
 ----
