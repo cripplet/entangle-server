@@ -390,7 +390,7 @@ void entangle::OTNode::process() {
 						goto proc_loop_tail;
 					}
 
-					// L[V[s] + v[S] + 1 .. V[s] + V[s] + 1] := ...
+					// L[V[s] + v[S] + 1 .. V[s] + V[S] + 1] := ...
 					auto L = this->links[s].get_l();
 					for(size_t k = V[s] + V[S]; k >= V[s] + qel->v[S] + 1; --k) {
 						if(L->count(k - 1) != 0) {
