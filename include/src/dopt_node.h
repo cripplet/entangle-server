@@ -1,5 +1,5 @@
-#ifndef _ENTANGLE_DOPT_NODE
-#define _ENTANGLE_DOPT_NODE
+#ifndef _ENTANGLE_DOPT_NODE_H
+#define _ENTANGLE_DOPT_NODE_H
 
 #include <atomic>
 #include <chrono>
@@ -91,9 +91,9 @@ namespace entangle {
 	/**
 	 * the node itself
 	 */
-	class OTNode;
-	typedef void (OTNode::*disp_func)(std::string);
+	template <typename T>
 	class OTNode {
+		typedef void (OTNode<T>::*disp_func)(std::string);
 		public:
 			OTNode(size_t port, size_t max_conn);
 			~OTNode();
@@ -197,4 +197,7 @@ namespace entangle {
 			static std::chrono::milliseconds increment;
 	};
 }
+
+#include "src/templates/dopt_node.template"
+
 #endif

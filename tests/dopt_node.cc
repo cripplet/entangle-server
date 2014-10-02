@@ -6,10 +6,11 @@
 #include "libs/giga/file.h"
 
 #include "src/dopt_node.h"
+#include "src/dopt_void_hook.h"
 
 TEST_CASE("entangle|dopt_node-save") {
-	auto s = entangle::OTNode(8000, 1);
-	auto x = entangle::OTNode(8050, 0);
+	auto s = entangle::OTNode<entangle::OTVoidHook>(8000, 1);
+	auto x = entangle::OTNode<entangle::OTVoidHook>(8050, 0);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
@@ -46,7 +47,7 @@ TEST_CASE("entangle|dopt_node-save") {
 }
 
 TEST_CASE("entangle|dopt_node-enc") {
-	auto n = entangle::OTNode(8888, 100);
+	auto n = entangle::OTNode<entangle::OTVoidHook>(8888, 100);
 	entangle::upd_t u = { entangle::del, 100, 'c' };
 	REQUIRE(n.enc_upd_t(u).compare("1:100:c") == 0);
 	REQUIRE(n.cmp_upd_t({ entangle::del, 100, 'c'}, { entangle::del, 100, 'c' }) == true);
@@ -55,8 +56,8 @@ TEST_CASE("entangle|dopt_node-enc") {
 }
 
 TEST_CASE("entangle|dopt_node-bind") {
-	auto s = entangle::OTNode(8000, 1);
-	auto x = entangle::OTNode(8050, 1);
+	auto s = entangle::OTNode<entangle::OTVoidHook>(8000, 1);
+	auto x = entangle::OTNode<entangle::OTVoidHook>(8050, 1);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
@@ -80,9 +81,9 @@ TEST_CASE("entangle|dopt_node-bind") {
 }
 
 TEST_CASE("entangle|dopt_node-join") {
-	auto s = entangle::OTNode(8000, 1);
-	auto x = entangle::OTNode(8050, 0);
-	auto y = entangle::OTNode(8051, 0);
+	auto s = entangle::OTNode<entangle::OTVoidHook>(8000, 1);
+	auto x = entangle::OTNode<entangle::OTVoidHook>(8050, 0);
+	auto y = entangle::OTNode<entangle::OTVoidHook>(8051, 0);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
@@ -141,8 +142,8 @@ TEST_CASE("entangle|dopt_node-join") {
 }
 
 TEST_CASE("entangle|dopt_node-convergence") {
-	auto s = entangle::OTNode(8000, 100);
-	auto x = entangle::OTNode(8050, 2);
+	auto s = entangle::OTNode<entangle::OTVoidHook>(8000, 100);
+	auto x = entangle::OTNode<entangle::OTVoidHook>(8050, 2);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
@@ -192,8 +193,8 @@ TEST_CASE("entangle|dopt_node-convergence") {
 }
 
 TEST_CASE("entangle|dopt_node-daemon") {
-	auto n = entangle::OTNode(8888, 100);
-	auto m = entangle::OTNode(8889, 100);
+	auto n = entangle::OTNode<entangle::OTVoidHook>(8888, 100);
+	auto m = entangle::OTNode<entangle::OTVoidHook>(8889, 100);
 
 	REQUIRE(n.bind("") == true);
 
@@ -225,9 +226,9 @@ TEST_CASE("entangle|dopt_node-daemon") {
 }
 
 TEST_CASE("entangle|dopt_node-topography") {
-	auto s = entangle::OTNode(8000, 100);
-	auto x = entangle::OTNode(8050, 2);
-	auto y = entangle::OTNode(8051, 1);
+	auto s = entangle::OTNode<entangle::OTVoidHook>(8000, 100);
+	auto x = entangle::OTNode<entangle::OTVoidHook>(8050, 2);
+	auto y = entangle::OTNode<entangle::OTVoidHook>(8051, 1);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
@@ -301,9 +302,9 @@ TEST_CASE("entangle|dopt_node-topography") {
 }
 
 TEST_CASE("entangle|dopt_node-concurrent") {
-	auto s = entangle::OTNode(8000, 100);
-	auto x = entangle::OTNode(8050, 1);
-	auto y = entangle::OTNode(8051, 1);
+	auto s = entangle::OTNode<entangle::OTVoidHook>(8000, 100);
+	auto x = entangle::OTNode<entangle::OTVoidHook>(8050, 1);
+	auto y = entangle::OTNode<entangle::OTVoidHook>(8051, 1);
 
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
