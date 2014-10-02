@@ -49,7 +49,7 @@
  *	typedef std::vector<qel_t> q_t;
  */
 
-// template <typename T> std::map<std::string, entangle::OTNode<T>::disp_func> entangle::OTNode<T>::dispatch_table;
+// workaround for invalid template argument "entangle::OTNode<T>::disp_func"
 template <typename T> std::map<std::string, void (entangle::OTNode<T>::*)(std::basic_string<char>)> entangle::OTNode<T>::dispatch_table;
 
 template <typename T> const std::string entangle::OTNode<T>::cmd_join = "JOIN";
