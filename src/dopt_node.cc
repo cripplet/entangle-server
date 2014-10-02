@@ -21,31 +21,6 @@
 
 #include "src/dopt_node.h"
 
-/**
- *	type definitions reference
- *
- *	these are copied over from include/src/dopt_node.h for easy lookups
- *
- *	typedef size_t sit_t;
- *	typedef std::string obj_t;
- *	typedef uint8_t func_type;
- *	const func_type ins = 0;
- *	const func_type del = 1;
- *	typedef struct {
- *		func_type type;
- *		size_t pos;
- *		char c;
- *	} upd_t;
- *	typedef std::map<sit_t, size_t> vec_t;
- *	typedef std::map<size_t, upd_t> log_t;
- *	typedef struct {
- *		sit_t s;
- *		vec_t v;
- *		upd_t u;
- *	} qel_t;
- *	typedef std::vector<qel_t> q_t;
- */
-
 entangle::OTNodeLink::OTNodeLink() {
 	this->c = NULL;
 }
