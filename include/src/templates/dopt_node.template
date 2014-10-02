@@ -103,6 +103,10 @@ template <typename T> entangle::OTNode<T>::OTNode(size_t port, size_t max_conn) 
 }
 template <typename T> entangle::OTNode<T>::~OTNode() { this->dn(); }
 
+template <typename T> void entangle::OTNode<T>::set_hook(const std::shared_ptr<T>& hook) {
+	this->hook = hook;
+}
+
 template <typename T> bool entangle::OTNode<T>::bind(std::string filename) {
 	if(this->is_bound) { return(false); }
 	if(filename.compare("") == 0) {
@@ -429,9 +433,17 @@ template <typename T> void entangle::OTNode<T>::apply(const std::shared_ptr<giga
 	if(u.type == entangle::ins) {
 		c->seek(u.pos, true, true);
 		c->write(std::string(1, u.c), true);
+		auto h = this->hook.lock();
+		if(h != NULL) {
+			h->i(c->get_pos(), u.c);
+		}
 	} else if(u.type == entangle::del) {
 		c->seek(u.pos, true, true);
 		c->erase(1);
+		auto h = this->hook.lock();
+		if(h != NULL) {
+			h->e(c->get_pos());
+		}
 	}
 	this->is_dirty = true;
 }

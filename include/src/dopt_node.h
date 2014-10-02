@@ -133,7 +133,11 @@ namespace entangle {
 			static const std::string cmd_delete;
 			static const std::string cmd_save;
 
+			void set_hook(const std::shared_ptr<T>& hook);
+
 		private:
+			std::weak_ptr<T> hook;
+
 			std::shared_ptr<std::atomic<bool>> flag;
 			std::shared_ptr<msgpp::MessageNode> node;
 			size_t max_conn;
