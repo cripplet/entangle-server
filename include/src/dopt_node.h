@@ -139,7 +139,7 @@ namespace entangle {
 			size_t get_port();
 
 		private:
-			std::weak_ptr<T> hook;
+			std::shared_ptr<T> hook;
 
 			std::shared_ptr<std::atomic<bool>> flag;
 			std::shared_ptr<msgpp::MessageNode> node;
