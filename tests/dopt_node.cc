@@ -59,6 +59,9 @@ TEST_CASE("entangle|dopt_node-bind") {
 	auto s = entangle::OTNode<entangle::OTVoidHook>(8000, 1);
 	auto x = entangle::OTNode<entangle::OTVoidHook>(8050, 1);
 
+	REQUIRE(s.get_port() == 8000);
+	REQUIRE(x.get_port() == 8050);
+
 	REQUIRE_NOTHROW(s.up());
 	REQUIRE_NOTHROW(x.up());
 

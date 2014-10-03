@@ -136,6 +136,8 @@ namespace entangle {
 
 			void set_hook(const std::shared_ptr<T>& hook);
 
+			size_t get_port();
+
 		private:
 			std::weak_ptr<T> hook;
 
