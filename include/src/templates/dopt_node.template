@@ -61,6 +61,7 @@ template <typename T> const std::string entangle::OTNode<T>::cmd_delete = "DELE"
 template <typename T> const std::string entangle::OTNode<T>::cmd_save = "SAVE";
 template <typename T> std::chrono::milliseconds entangle::OTNode<T>::increment = std::chrono::milliseconds(50);
 
+template <typename T> entangle::OTNode<T>::OTNode() {}
 template <typename T> entangle::OTNode<T>::OTNode(size_t port, size_t max_conn) {
 	this->node = std::shared_ptr<msgpp::MessageNode> (new msgpp::MessageNode(port, msgpp::MessageNode::ipv4, 5, max_conn + 5));
 	this->max_conn = max_conn;

@@ -95,6 +95,7 @@ namespace entangle {
 	class OTNode {
 		typedef void (OTNode<T>::*disp_func)(std::string);
 		public:
+			OTNode();
 			OTNode(size_t port, size_t max_conn);
 			~OTNode();
 
