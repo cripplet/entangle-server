@@ -8,35 +8,24 @@ INCLUDE_LIBS=-Iexternal/giga/external/catch/include/ -Iexternal/exceptionpp/incl
 
 LIBS=-pthread
 
-S_SOURCES+=src/*cc libs/*/*cc
-S_OBJECTS=$(S_SOURCES:.cc=.o)
+SOURCES+=src/*cc tests/*cc libs/*/*cc
+OBJECTS=$(SOURCES:.cc=.o)
 
-T_SOURCES+=src/*cc tests/*cc libs/*/*cc
-T_OBJECTS=$(T_SOURCES:.cc=.o)
-
-S_EXECUTABLE=entangle.app
-T_EXECUTABLE=tests.app
+EXECUTABLE=entangle-server.app
 
 .PHONY: all clean test prep
 
-all: $(S_SOURCES) $(S_EXECUTABLE)
+all: $(SOURCES) $(EXECUTABLE)
 
-$(S_EXECUTABLE): $(S_OBJECTS)
-	@$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(S_OBJECTS) -o $@ $(LIBS)
-
-$(T_EXECUTABLE): $(T_OBJECTS)
-	@$(CC) $(CFLAGS) -D _ENTANGLE_NO_MAIN $(INCLUDE_LIBS) $(INCLUDE) $(T_OBJECTS) -o $@ $(LIBS)
+$(EXECUTABLE): $(OBJECTS)
+	@$(CC) $(CFLAGS) $(INCLUDE_LIBS) $(INCLUDE) $(OBJECTS) -o $@ $(LIBS)
 
 prep:
 	@rm -rf tests/files/
-
 	@mkdir -p tests/files/
 
-DO_TEST?=true
-test: clean $(S_EXECUTABLE) $(T_EXECUTABLE) prep
-	@if [ "$(DO_TEST)" = "true" ]; then \
-		ulimit -c unlimited && time ./$(T_EXECUTABLE) | tee results.log; \
-	fi
+test: clean $(EXECUTABLE) prep
+	@ulimit -c unlimited && time ./$(EXECUTABLE) | tee results.log
 
 clean:
-	@rm -f $(S_EXECUTABLE) $(T_EXECUTABLE) *.o *.log core
+	@rm -f $(EXECUTABLE) *.o *.log core
