@@ -1,6 +1,6 @@
 [submodule "external/giga"]
 	path = external/giga
-	url = https://github.com/cripplet/giga.git
+	url = https://github.com/minkezhang/giga.git
 [submodule "external/msgpp"]
 	path = external/msgpp
-	url = https://github.com/cripplet/msgpp.git
+	url = https://github.com/minkezhang/msgpp.git
